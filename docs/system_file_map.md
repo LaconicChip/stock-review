@@ -47,7 +47,7 @@
 | 位置 | 作用 | 状态 |
 |---|---|---|
 | WorkBuddy 自动化任务 | 交易日 15:30 触发复盘 | 📝（MVP 验收后创建） |
-| scripts/start_web.sh | 启动本地网页服务（http.server） | ✅ |
+| scripts/start_web.sh | 本地网页服务快速启停控制器（start/stop/restart/status，http.server 后台守护 + pidfile） | ✅ |
 | scripts/build_report.py | 把当日 JSON 嵌入模板生成 outputs/报告 | ✅ |
 
 ## 归档

@@ -18,5 +18,8 @@ outputs/*.html
 # 项目内部状态（含 Agent 记忆笔记，禁止外传）
 .workbuddy/
 
+# 本地网页服务运行时文件（PID；日志已被 *.log 忽略）
+.stock-review.pid
+
 # 个人自选股清单（真实文件本地保留，仓库只提交示例；见 config/stocks.example.json）
 config/stocks.json
