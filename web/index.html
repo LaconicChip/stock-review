@@ -59,7 +59,7 @@
     .tape .down { color: #4ADE80; }
     @keyframes tapemove { to { transform: translateX(-50%); } }
 
-    /* ===== 通用 ===== */
+    /* ===== 通用卡片 ===== */
     .card { background: var(--card); border: 1px solid var(--hairline); border-radius: 6px;
             padding: 16px 18px; margin-bottom: 14px; }
     h2 { font: 600 16px/1.3 var(--serif); letter-spacing: .06em; margin: 0 0 12px;
@@ -72,6 +72,32 @@
     @media (max-width: 860px) { .cols-2, .cols-3 { grid-template-columns: 1fr; } }
     .state { padding: 64px 0; text-align: center; color: var(--ink2); font-size: 14px; }
     .state .hint { margin-top: 8px; font-size: 12px; }
+
+    /* ===== 手风琴模块（方向C）===== */
+    .module { margin-bottom: 14px; }
+    .acc-header { width: 100%; text-align: left; background: var(--card); border: 1px solid var(--hairline);
+                  border-radius: 6px; padding: 14px 16px; cursor: pointer; display: flex; align-items: center;
+                  gap: 10px; font: inherit; color: var(--ink); transition: background 120ms ease-out; }
+    .acc-header:active { background: #F3EEE2; }
+    .module.open .acc-header { border-bottom: none; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    .acc-header .chev { color: var(--ink2); transition: transform .2s ease-out; font-size: 13px; }
+    .module.open .acc-header .chev { transform: rotate(90deg); }
+    .acc-header .htitle { font: 600 16px/1.3 var(--serif); letter-spacing: .06em; }
+    .acc-header .hsum { margin-left: auto; font-size: 13px; color: var(--ink2); text-align: right; }
+    .acc-body { max-height: 0; overflow: hidden; transition: max-height .35s ease-out; }
+    .module.open .acc-body { max-height: 20000px; } /* 足够大，不会截断任何合理内容 */
+    .acc-body > .inner { padding: 16px 18px; background: var(--card);
+                              border: 1px solid var(--hairline); border-top: none;
+                              border-radius: 0 0 6px 6px; }
+    .sub-title { font: 600 14px/1.3 var(--serif); letter-spacing: .05em; margin: 18px 0 10px; }
+    .sub-title:first-child { margin-top: 0; }
+
+    /* ===== 今日核心结论 hero（置顶、不固定）===== */
+    .conclusion-hero { border-left: 3px solid var(--up); }
+    .chead { display: flex; align-items: center; gap: 8px; font: 600 14px var(--serif);
+             letter-spacing: .05em; margin-bottom: 8px; }
+    .chead .ctag { margin-left: auto; font: 400 11px var(--sans); color: var(--ink2); letter-spacing: 0; }
+    .conclusion { white-space: pre-line; line-height: 1.85; color: var(--ink); font-size: 13.5px; margin: 0; }
 
     /* ===== 市场情绪 Hero ===== */
     .hero-grid { display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: center; }
@@ -146,19 +172,6 @@
 
     footer { text-align: center; color: var(--ink2); font-size: 12px; padding: 16px 0 4px; }
 
-    /* ===== 过渡与无障碍 ===== */
-    .fade-enter-active, .fade-leave-active { transition: opacity 180ms ease-out; }
-    .fade-enter-from, .fade-leave-to { opacity: 0; }
-    :focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
-    @media (prefers-reduced-motion: reduce) {
-      .tape-track { animation: none; }
-      .tape-viewport { overflow-x: auto; }
-      .fade-enter-active, .fade-leave-active, .navbtn { transition: none; }
-    }
-
-    /* ===== 今日核心结论 ===== */
-    .conclusion { white-space: pre-line; line-height: 1.85; color: var(--ink); font-size: 13.5px; margin: 0; }
-
     /* ===== 集群详情导航 ===== */
     .clusters { display: flex; flex-direction: column; gap: 7px; }
     .cluster-head { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
@@ -174,6 +187,23 @@
     .cluster-body { padding: 2px 13px 8px; border: 1px solid var(--hairline); border-top: 0;
                     border-radius: 0 0 6px 6px; margin-top: -1px; }
     .inflow { font-family: var(--mono); }
+
+    /* ===== 历史校验链接 ===== */
+    .histlink { display: flex; align-items: center; gap: 10px; padding: 11px 2px;
+                border-bottom: 1px solid var(--hairline); color: var(--ink); text-decoration: none; font-size: 14px; }
+    .histlink:last-of-type { border-bottom: none; }
+    .histlink:hover { color: var(--link); }
+
+    /* ===== 过渡与无障碍 ===== */
+    .fade-enter-active, .fade-leave-active { transition: opacity 180ms ease-out; }
+    .fade-enter-from, .fade-leave-to { opacity: 0; }
+    :focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) {
+      .tape-track { animation: none; }
+      .tape-viewport { overflow-x: auto; }
+      .fade-enter-active, .fade-leave-active, .navbtn { transition: none; }
+      .acc-body, .acc-header .chev, .caret { transition: none; }
+    }
   </style>
 </head>
 <body>
@@ -204,6 +234,12 @@
       </main>
       <main v-else :key="selected">
 
+        <!-- 今日核心结论（置顶，不固定） -->
+        <section class="card conclusion-hero" v-if="data.market.conclusion">
+          <div class="chead"><span>今日核心结论</span><span class="ctag">AI 复盘总结 · {{ data.meta.date }}</span></div>
+          <p class="conclusion">{{ data.market.conclusion }}</p>
+        </section>
+
         <!-- 行情纸带 -->
         <div class="tape" aria-label="行情纸带">
           <div class="tape-viewport">
@@ -217,188 +253,200 @@
           </div>
         </div>
 
-        <!-- 市场情绪 -->
-        <section class="card">
-          <h2>市场情绪 <span class="tag">交易日 {{ data.meta.date }} · {{ data.meta.source }}</span></h2>
-          <div class="hero-grid">
-            <div>
-              <div class="giant" :class="cls(data.market.breadth.upRatio - 50)">
-                {{ data.market.breadth.upRatio }}<span class="pct">%</span>
+        <!-- 大盘全景（默认展开） -->
+        <section class="module" :class="{ open: open.overview }">
+          <button class="acc-header" @click="toggle('overview')" :aria-expanded="open.overview">
+            <span class="chev">▸</span><span class="htitle">大盘全景</span>
+            <span class="hsum">{{ summaryLine }}</span>
+          </button>
+          <div class="acc-body"><div class="inner card">
+            <div class="hero-grid">
+              <div>
+                <div class="giant" :class="cls(data.market.breadth.upRatio - 50)">
+                  {{ data.market.breadth.upRatio }}<span class="pct">%</span>
+                </div>
+                <div class="giant-label">上涨家数占比</div>
               </div>
-              <div class="giant-label">上涨家数占比</div>
-            </div>
-            <div>
-              <div class="big-bar">
-                <div class="seg-up" :style="{flex: data.market.breadth.upCount}">{{ data.market.breadth.upCount }} 涨</div>
-                <div class="seg-flat" :style="{flex: data.market.breadth.flatCount}"></div>
-                <div class="seg-down" :style="{flex: data.market.breadth.downCount}">{{ data.market.breadth.downCount }} 跌</div>
-              </div>
-              <div class="stat-row">
-                <span>涨停 <b class="up">{{ data.market.breadth.upLimitCount }}</b></span>
-                <span>跌停 <b class="down">{{ data.market.breadth.downLimitCount }}</b></span>
-                <span>平盘 {{ data.market.breadth.flatCount }}</span>
-                <span>停牌 {{ data.market.breadth.suspensionCount != null ? data.market.breadth.suspensionCount : '—' }}</span>
-                <span>成交 {{ fmtMoney(data.market.breadth.totalAmount) }}（较上日 {{ fmtSignedMoney(data.market.breadth.amountChange) }}）</span>
-              </div>
-              <p class="comment">{{ data.market.breadth.comment }}</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- 今日核心结论 -->
-        <section class="card" v-if="data.market.conclusion">
-          <h2>今日核心结论 <span class="tag">AI 复盘总结</span></h2>
-          <p class="conclusion">{{ data.market.conclusion }}</p>
-        </section>
-
-        <!-- 今日指数 -->
-        <section class="card">
-          <h2>今日指数 <span class="tag">收盘点位 · 区间涨跌</span></h2>
-          <div class="grid cols-3">
-            <div v-for="ix in indices" :key="ix.name">
-              <div class="idx-name">{{ ix.name }}</div>
-              <div class="idx-close">{{ ix.close }}</div>
-              <div class="idx-pct" :class="cls(ix.pct)">{{ signed(ix.pct) }}%</div>
-              <template v-if="ix.hi52 != null">
-                <div class="rbar"><i :style="{left: ix.pos52 + '%'}"></i></div>
-                <div class="rlabel"><span>{{ ix.lo52 }}</span><span>52周</span><span>{{ ix.hi52 }}</span></div>
-              </template>
-              <div class="idx-chgs">
-                <span>5日 <b :class="cls(ix.c5)">{{ signed(ix.c5) }}</b></span>
-                <span>20日 <b :class="cls(ix.c20)">{{ signed(ix.c20) }}</b></span>
-                <span v-if="ix.c60 != null">60日 <b :class="cls(ix.c60)">{{ signed(ix.c60) }}</b></span>
-                <span>250日 <b :class="cls(ix.c250)">{{ signed(ix.c250) }}</b></span>
+              <div>
+                <div class="big-bar">
+                  <div class="seg-up" :style="{flex: data.market.breadth.upCount}">{{ data.market.breadth.upCount }} 涨</div>
+                  <div class="seg-flat" :style="{flex: data.market.breadth.flatCount}"></div>
+                  <div class="seg-down" :style="{flex: data.market.breadth.downCount}">{{ data.market.breadth.downCount }} 跌</div>
+                </div>
+                <div class="stat-row">
+                  <span>涨停 <b class="up">{{ data.market.breadth.upLimitCount }}</b></span>
+                  <span>跌停 <b class="down">{{ data.market.breadth.downLimitCount }}</b></span>
+                  <span>平盘 {{ data.market.breadth.flatCount }}</span>
+                  <span>停牌 {{ data.market.breadth.suspensionCount != null ? data.market.breadth.suspensionCount : '—' }}</span>
+                  <span>成交 {{ fmtMoney(data.market.breadth.totalAmount) }}（较上日 {{ fmtSignedMoney(data.market.breadth.amountChange) }}）</span>
+                </div>
+                <p class="comment">{{ data.market.breadth.comment }}</p>
               </div>
             </div>
-          </div>
-          <div class="money-line">
-            两市成交额 {{ fmtMoney(trade.MONEY * 1e8) }} ·
-            较5日均 {{ signed(round1(trade.MONEY_5DAVG_RATIO - 100)) }}% ·
-            较20日均 {{ signed(round1(trade.MONEY_20DAVG_RATIO - 100)) }}% ·
-            较60日均 {{ signed(round1(trade.MONEY_60DAVG_RATIO - 100)) }}%
-          </div>
-        </section>
 
-        <div class="grid cols-2">
-          <!-- 涨跌分档 -->
-          <section class="card">
-            <h2>涨跌分档 <span class="tag">家数</span></h2>
-            <template v-if="data.market.breadth.detail && data.market.breadth.detail.length">
-              <div class="hrow" v-for="seg in data.market.breadth.detail" :key="seg.section">
-                <span class="hlabel">{{ seg.section }}</span>
-                <span class="hbar"><i :class="cls(seg.flag)" :style="{width: barWidth(seg.count)}"></i></span>
-                <span class="hcount" :class="cls(seg.flag)">{{ seg.count }}</span>
-              </div>
-            </template>
-            <p v-else class="comment">该交易日为历史补做日，精细涨跌分档数据已不可回溯。</p>
-          </section>
-
-          <!-- 市场画像 -->
-          <section class="card">
-            <h2>市场画像 <span class="tag">综合评分与状态</span></h2>
-            <div class="kv small" v-for="m in summaryRows" :key="m.key">
-              <span class="k">{{ m.label }}</span>
-              <span class="v"><b v-if="m.kw" :class="clsStr(m.kw)">{{ m.kw }}</b>{{ m.rest }}</span>
-            </div>
-          </section>
-        </div>
-
-        <!-- 百日新高 -->
-        <section class="card" v-if="data.market.new_highs">
-          <h2>百日新高 <span class="tag">创{{ data.market.new_highs.window }}新高家数</span></h2>
-          <div class="hero-grid" style="gap:20px">
-            <div>
-              <div class="giant">{{ data.market.new_highs.count }}</div>
-              <div class="giant-label">创{{ data.market.new_highs.window }}新高</div>
-            </div>
-            <div>
-              <p class="comment">{{ data.market.new_highs.note }}</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- 板块风向 -->
-        <section class="card">
-          <h2>板块风向 <span class="tag">涨跌幅% · 主力净流入</span></h2>
-          <div class="grid cols-2">
-            <div v-for="blk in sectorBlocks" :key="blk.title">
-              <div class="plate-title">{{ blk.title }}</div>
-              <div class="prow" v-for="(s, i) in blk.list" :key="s.code">
-                <span class="rank">{{ i + 1 }}</span>
-                <span>{{ s.name }}</span>
-                <span :class="cls(s.zdf)">{{ signed(s.zdf) }}%</span>
-                <span :class="cls(s.main_inflow)">{{ fmtInflow(s.main_inflow) }}</span>
-                <span class="plead">领涨 {{ s.lead_stock.name }} {{ signed(s.lead_stock.zdf) }}%</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 集群详情导航 -->
-        <section class="card" v-if="data.market.clusters && data.market.clusters.length">
-          <h2>集群详情导航 <span class="tag">点击展开看领涨股与资金</span></h2>
-          <div class="clusters">
-            <div class="cluster" v-for="(c, ci) in data.market.clusters" :key="ci">
-              <button class="cluster-head" @click="toggleCluster(ci)" :aria-expanded="expandedCluster === ci">
-                <span class="ctitle">{{ c.name }}</span>
-                <span class="cmeta">{{ c.members.length }} 个板块</span>
-                <span class="caret" :class="{ open: expandedCluster === ci }">▸</span>
-              </button>
-              <div class="cluster-body" v-show="expandedCluster === ci">
-                <div class="prow" v-for="(m, mi) in c.members" :key="mi">
-                  <span class="rank">{{ mi + 1 }}</span>
-                  <span>{{ m.name }}</span>
-                  <span :class="cls(m.zdf)">{{ signed(m.zdf) }}%</span>
-                  <span :class="cls(m.zljlr_yi)" class="inflow">{{ signed(m.zljlr_yi) }}亿</span>
-                  <span class="plead">领涨 {{ m.lead_stock }} {{ signed(m.lead_zdf) }}%</span>
+            <h3 class="sub-title">今日指数</h3>
+            <div class="grid cols-3">
+              <div v-for="ix in indices" :key="ix.name">
+                <div class="idx-name">{{ ix.name }}</div>
+                <div class="idx-close">{{ ix.close }}</div>
+                <div class="idx-pct" :class="cls(ix.pct)">{{ signed(ix.pct) }}%</div>
+                <template v-if="ix.hi52 != null">
+                  <div class="rbar"><i :style="{left: ix.pos52 + '%'}"></i></div>
+                  <div class="rlabel"><span>{{ ix.lo52 }}</span><span>52周</span><span>{{ ix.hi52 }}</span></div>
+                </template>
+                <div class="idx-chgs">
+                  <span>5日 <b :class="cls(ix.c5)">{{ signed(ix.c5) }}</b></span>
+                  <span>20日 <b :class="cls(ix.c20)">{{ signed(ix.c20) }}</b></span>
+                  <span v-if="ix.c60 != null">60日 <b :class="cls(ix.c60)">{{ signed(ix.c60) }}</b></span>
+                  <span>250日 <b :class="cls(ix.c250)">{{ signed(ix.c250) }}</b></span>
                 </div>
               </div>
             </div>
-          </div>
+            <div class="money-line">
+              两市成交额 {{ fmtMoney(trade.MONEY * 1e8) }} ·
+              较5日均 {{ signed(round1(trade.MONEY_5DAVG_RATIO - 100)) }}% ·
+              较20日均 {{ signed(round1(trade.MONEY_20DAVG_RATIO - 100)) }}% ·
+              较60日均 {{ signed(round1(trade.MONEY_60DAVG_RATIO - 100)) }}%
+            </div>
+
+            <h3 class="sub-title">涨跌分档与市场画像</h3>
+            <div class="grid cols-2">
+              <div>
+                <div class="comment" style="margin:0 0 6px">涨跌分档（家数）</div>
+                <template v-if="data.market.breadth.detail && data.market.breadth.detail.length">
+                  <div class="hrow" v-for="seg in data.market.breadth.detail" :key="seg.section">
+                    <span class="hlabel">{{ seg.section }}</span>
+                    <span class="hbar"><i :class="cls(seg.flag)" :style="{width: barWidth(seg.count)}"></i></span>
+                    <span class="hcount" :class="cls(seg.flag)">{{ seg.count }}</span>
+                  </div>
+                </template>
+                <p v-else class="comment">该交易日为历史补做日，精细涨跌分档数据已不可回溯。</p>
+              </div>
+              <div>
+                <div class="comment" style="margin:0 0 6px">市场画像（综合评分与状态）</div>
+                <div class="kv small" v-for="m in summaryRows" :key="m.key">
+                  <span class="k">{{ m.label }}</span>
+                  <span class="v"><b v-if="m.kw" :class="clsStr(m.kw)">{{ m.kw }}</b>{{ m.rest }}</span>
+                </div>
+              </div>
+            </div>
+
+          </div></div>
         </section>
 
-        <!-- 自选股 -->
-        <section class="card">
-          <h2>自选股 <span class="tag">{{ data.watchlist.length }} 只</span></h2>
-          <div class="grid cols-2">
-            <article class="stock" v-for="st in data.watchlist" :key="st.code">
-              <div class="stock-head">
-                <div class="s-name">{{ st.name }}<span class="s-code">{{ st.code }}</span><span class="s-type" v-if="typeLabel(st.type)">{{ typeLabel(st.type) }}</span></div>
-                <div class="s-price">
-                  <span class="big2" :class="cls(st.quote.change_percent)">{{ st.quote.price }}</span>
-                  <span :class="cls(st.quote.change_percent)">{{ signed(st.quote.change_percent) }}%</span>
+        <!-- 板块轮动（默认折叠） -->
+        <section class="module" :class="{ open: open.sectors }">
+          <button class="acc-header" @click="toggle('sectors')" :aria-expanded="open.sectors">
+            <span class="chev">▸</span><span class="htitle">板块轮动</span>
+            <span class="hsum">{{ sectorSummary }}</span>
+          </button>
+          <div class="acc-body"><div class="inner card">
+            <div class="grid cols-2">
+              <div v-for="blk in sectorBlocks" :key="blk.title">
+                <div class="plate-title">{{ blk.title }}</div>
+                <div class="prow" v-for="(s, i) in blk.list" :key="s.code">
+                  <span class="rank">{{ i + 1 }}</span>
+                  <span>{{ s.name }}</span>
+                  <span :class="cls(s.zdf)">{{ signed(s.zdf) }}%</span>
+                  <span :class="cls(s.main_inflow)">{{ fmtInflow(s.main_inflow) }}</span>
+                  <span class="plead">领涨 {{ s.lead_stock.name }} {{ signed(s.lead_stock.zdf) }}%</span>
                 </div>
               </div>
-              <div class="s-range">
-                <div class="rbar"><i :style="{left: pos52(st) + '%'}"></i></div>
-                <div class="rlabel"><span>{{ st.quote.low_52week }}</span><span>52周</span><span>{{ st.quote.high_52week }}</span></div>
-              </div>
-              <div class="s-metrics">
-                <div class="kv small" v-if="st.quote.turnover_rate != null"><span class="k">换手率</span><span class="v">{{ st.quote.turnover_rate }}%</span></div>
-                <div class="kv small" v-if="st.quote.volume_ratio != null"><span class="k">量比</span><span class="v">{{ st.quote.volume_ratio }}</span></div>
-                <div class="kv small" v-if="st.quote.pe_ratio != null"><span class="k">市盈率</span><span class="v">{{ st.quote.pe_ratio }}</span></div>
-                <div class="kv small" v-if="st.quote.pb_ratio != null"><span class="k">市净率</span><span class="v">{{ st.quote.pb_ratio }}</span></div>
-                <div class="kv small" v-if="st.quote.chg_5d != null"><span class="k">5日</span><span class="v" :class="cls(st.quote.chg_5d)">{{ signed(st.quote.chg_5d) }}%</span></div>
-                <div class="kv small" v-if="st.quote.chg_20d != null"><span class="k">20日</span><span class="v" :class="cls(st.quote.chg_20d)">{{ signed(st.quote.chg_20d) }}%</span></div>
-                <div class="kv small" v-if="st.quote.chg_60d != null"><span class="k">60日</span><span class="v" :class="cls(st.quote.chg_60d)">{{ signed(st.quote.chg_60d) }}%</span></div>
-                <div class="kv small" v-if="st.quote.chg_ytd != null"><span class="k">年初至今</span><span class="v" :class="cls(st.quote.chg_ytd)">{{ signed(st.quote.chg_ytd) }}%</span></div>
-                <div class="kv small" v-if="st.quote.total_market_cap != null"><span class="k">总市值</span><span class="v">{{ fmtCap(st.quote.total_market_cap) }}</span></div>
-                <div class="kv small" v-if="st.quote.amount != null"><span class="k">成交额</span><span class="v">{{ fmtMoney(st.quote.amount) }}</span></div>
-              </div>
-              <div class="s-news" v-if="st.news.length">
-                <div class="news-title">新闻</div>
-                <a v-for="n in st.news" :key="n.id" :href="n.url" target="_blank" rel="noopener">
-                  <span>{{ n.title }}</span><span class="ntime">{{ shortTime(n.time) }}</span>
-                </a>
-              </div>
-              <div class="s-news" v-if="st.notice.length">
-                <div class="news-title">公告</div>
-                <div class="notice" v-for="n in st.notice" :key="n.id">
-                  <span>{{ n.title }}</span><span class="ntime">{{ shortDate(n.time) }}</span>
+            </div>
+            <p class="comment">板块涨跌幅为价格指数口径；主力净流入单位万元，展示已折算。</p>
+          </div></div>
+        </section>
+
+        <!-- 资金簇（默认折叠） -->
+        <section class="module" :class="{ open: open.clusters }">
+          <button class="acc-header" @click="toggle('clusters')" :aria-expanded="open.clusters">
+            <span class="chev">▸</span><span class="htitle">资金簇</span>
+            <span class="hsum">{{ clusterSummary }}</span>
+          </button>
+          <div class="acc-body"><div class="inner card">
+            <div class="clusters">
+              <div class="cluster" v-for="(c, ci) in data.market.clusters" :key="ci">
+                <button class="cluster-head" @click="toggleCluster(ci)" :aria-expanded="expandedCluster === ci">
+                  <span class="ctitle">{{ c.name }}</span>
+                  <span class="cmeta">{{ c.members.length }} 个板块</span>
+                  <span class="caret" :class="{ open: expandedCluster === ci }">▸</span>
+                </button>
+                <div class="cluster-body" v-show="expandedCluster === ci">
+                  <div class="prow" v-for="(m, mi) in c.members" :key="mi">
+                    <span class="rank">{{ mi + 1 }}</span>
+                    <span>{{ m.name }}</span>
+                    <span :class="cls(m.zdf)">{{ signed(m.zdf) }}%</span>
+                    <span :class="cls(m.zljlr_yi)" class="inflow">{{ signed(m.zljlr_yi) }}亿</span>
+                    <span class="plead">领涨 {{ m.lead_stock }} {{ signed(m.lead_zdf) }}%</span>
+                  </div>
                 </div>
               </div>
-            </article>
-          </div>
+            </div>
+            <p class="comment">资金簇 zdf 为板块涨跌幅%，zljlr 为主力净流入（亿元）；与板块价格指数口径的背离见今日结论。</p>
+          </div></div>
+        </section>
+
+        <!-- 自选股（默认折叠） -->
+        <section class="module" :class="{ open: open.watchlist }">
+          <button class="acc-header" @click="toggle('watchlist')" :aria-expanded="open.watchlist">
+            <span class="chev">▸</span><span class="htitle">自选股</span>
+            <span class="hsum">{{ data.watchlist.length }} 只</span>
+          </button>
+          <div class="acc-body"><div class="inner card">
+            <div class="grid cols-2">
+              <article class="stock" v-for="st in data.watchlist" :key="st.code">
+                <div class="stock-head">
+                  <div class="s-name">{{ st.name }}<span class="s-code">{{ st.code }}</span><span class="s-type" v-if="typeLabel(st.type)">{{ typeLabel(st.type) }}</span></div>
+                  <div class="s-price">
+                    <span class="big2" :class="cls(st.quote.change_percent)">{{ st.quote.price }}</span>
+                    <span :class="cls(st.quote.change_percent)">{{ signed(st.quote.change_percent) }}%</span>
+                  </div>
+                </div>
+                <div class="s-range">
+                  <div class="rbar"><i :style="{left: pos52(st) + '%'}"></i></div>
+                  <div class="rlabel"><span>{{ st.quote.low_52week }}</span><span>52周</span><span>{{ st.quote.high_52week }}</span></div>
+                </div>
+                <div class="s-metrics">
+                  <div class="kv small" v-if="st.quote.turnover_rate != null"><span class="k">换手率</span><span class="v">{{ st.quote.turnover_rate }}%</span></div>
+                  <div class="kv small" v-if="st.quote.volume_ratio != null"><span class="k">量比</span><span class="v">{{ st.quote.volume_ratio }}</span></div>
+                  <div class="kv small" v-if="st.quote.pe_ratio != null"><span class="k">市盈率</span><span class="v">{{ st.quote.pe_ratio }}</span></div>
+                  <div class="kv small" v-if="st.quote.pb_ratio != null"><span class="k">市净率</span><span class="v">{{ st.quote.pb_ratio }}</span></div>
+                  <div class="kv small" v-if="st.quote.chg_5d != null"><span class="k">5日</span><span class="v" :class="cls(st.quote.chg_5d)">{{ signed(st.quote.chg_5d) }}%</span></div>
+                  <div class="kv small" v-if="st.quote.chg_20d != null"><span class="k">20日</span><span class="v" :class="cls(st.quote.chg_20d)">{{ signed(st.quote.chg_20d) }}%</span></div>
+                  <div class="kv small" v-if="st.quote.chg_60d != null"><span class="k">60日</span><span class="v" :class="cls(st.quote.chg_60d)">{{ signed(st.quote.chg_60d) }}%</span></div>
+                  <div class="kv small" v-if="st.quote.chg_ytd != null"><span class="k">年初至今</span><span class="v" :class="cls(st.quote.chg_ytd)">{{ signed(st.quote.chg_ytd) }}%</span></div>
+                  <div class="kv small" v-if="st.quote.total_market_cap != null"><span class="k">总市值</span><span class="v">{{ fmtCap(st.quote.total_market_cap) }}</span></div>
+                  <div class="kv small" v-if="st.quote.amount != null"><span class="k">成交额</span><span class="v">{{ fmtMoney(st.quote.amount) }}</span></div>
+                </div>
+                <div class="s-news" v-if="st.news.length">
+                  <div class="news-title">新闻</div>
+                  <a v-for="n in st.news" :key="n.id" :href="n.url" target="_blank" rel="noopener">
+                    <span>{{ n.title }}</span><span class="ntime">{{ shortTime(n.time) }}</span>
+                  </a>
+                </div>
+                <div class="s-news" v-if="st.notice.length">
+                  <div class="news-title">公告</div>
+                  <div class="notice" v-for="n in st.notice" :key="n.id">
+                    <span>{{ n.title }}</span><span class="ntime">{{ shortDate(n.time) }}</span>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div></div>
+        </section>
+
+        <!-- 历史校验（默认折叠，只读索引） -->
+        <section class="module" :class="{ open: open.history }">
+          <button class="acc-header" @click="toggle('history')" :aria-expanded="open.history">
+            <span class="chev">▸</span><span class="htitle">历史校验</span>
+            <span class="hsum">{{ days.length }} 个交易日</span>
+          </button>
+          <div class="acc-body"><div class="inner card">
+            <a class="histlink" v-for="d in daysReversed" :key="d.date" :href="'../outputs/' + d.date + '.html'" target="_blank" rel="noopener">
+              <span>{{ d.date }}</span><span class="hsum" style="margin-left:auto">查看报告 ↗</span>
+            </a>
+            <p class="comment">仅读取 data/index.json，不触发任何数据重算或外部接口。</p>
+          </div></div>
         </section>
       </main>
     </transition>
@@ -410,7 +458,10 @@
     const { createApp } = Vue;
     createApp({
       data() {
-        return { days: [], selected: "", data: null, loading: true, error: "", expandedCluster: null };
+        return {
+          days: [], selected: "", data: null, loading: true, error: "", expandedCluster: null,
+          open: { overview: true, sectors: false, clusters: false, watchlist: false, history: false },
+        };
       },
       computed: {
         daysReversed() { return [...this.days].reverse(); },
@@ -420,23 +471,22 @@
         overview() { return (this.data && this.data.market.overview) || []; },
         trade() { return this.modMap("trade"); },
         indices() {
-          const t = this.trade, iv = this.modMap("interval"), g = (o, k) => o[k];
+          const t = this.trade, iv = this.modMap("interval"), wl = (this.data ? this.data.watchlist : []);
+          const g = (o, k) => (o && o[k] != null ? o[k] : null);
+          const getWL = code => wl.find(s => s.code === code);
           const mk = (name, cp, cx, c5, c20, c60, c250, hi, lo) => ({
             name, close: cp, pct: cx, c5, c20, c60, c250, hi52: hi, lo52: lo,
             pos52: (cp != null && hi != null && lo != null && hi > lo)
               ? Math.min(100, Math.max(0, (cp - lo) / (hi - lo) * 100)) : null,
           });
-          const sh = mk("上证指数", g(t,"CLOSE_PRICE_SZZS"), g(t,"CHANGE_PCT_SZZS"), g(iv,"CHG_5D_SZZS"), g(iv,"CHG_20D_SZZS"), g(iv,"CHG_60D_SZZS"), g(iv,"CHG_250D_SZZS"), g(iv,"52WEEK_HIGH_SZZS"), g(iv,"52WEEK_LOW_SZZS"));
-          const cyb = mk("创业板指", g(t,"CLOSE_PRICE_CYBZ"), g(t,"CHANGE_PCT_CYBZ"), g(iv,"CHG_5D_CYBZ"), g(iv,"CHG_20D_CYBZ"), null, g(iv,"CHG_250D_CYBZ"), null, null);
-          const us = this.data ? this.data.watchlist.find(s => s.type === "us_index") : null;
-          const nas = us ? {
-            name: us.name, close: us.quote.price, pct: us.quote.change_percent,
-            c5: us.quote.chg_5d, c20: us.quote.chg_20d, c60: us.quote.chg_60d, c250: us.quote.chg_ytd,
-            hi52: us.quote.high_52week, lo52: us.quote.low_52week,
-            pos52: (us.quote.high_52week > us.quote.low_52week)
-              ? Math.min(100, Math.max(0, (us.quote.price - us.quote.low_52week) / (us.quote.high_52week - us.quote.low_52week) * 100)) : null,
-          } : null;
-          return [sh, cyb, nas].filter(Boolean);
+          const sh = mk("上证指数", g(t, "CLOSE_PRICE_SZZS"), g(t, "CHANGE_PCT_SZZS"), g(iv, "CHG_5D_SZZS"), g(iv, "CHG_20D_SZZS"), g(iv, "CHG_60D_SZZS"), g(iv, "CHG_250D_SZZS"), g(iv, "52WEEK_HIGH_SZZS"), g(iv, "52WEEK_LOW_SZZS"));
+          const sz = mk("深证成指", g(t, "CLOSE_PRICE_SZCZ"), g(t, "CHANGE_PCT_SZCZ"), g(iv, "CHG_5D_SZCZ"), g(iv, "CHG_20D_SZCZ"), null, g(iv, "CHG_250D_SZCZ"), null, null);
+          const cyb = mk("创业板指", g(t, "CLOSE_PRICE_CYBZ"), g(t, "CHANGE_PCT_CYBZ"), g(iv, "CHG_5D_CYBZ"), g(iv, "CHG_20D_CYBZ"), null, g(iv, "CHG_250D_CYBZ"), null, null);
+          const hs = getWL("sh000300");
+          const hsIdx = hs ? mk("沪深300", hs.quote.price, hs.quote.change_percent, hs.quote.chg_5d, hs.quote.chg_20d, hs.quote.chg_60d, hs.quote.chg_ytd, hs.quote.high_52week, hs.quote.low_52week) : null;
+          const usList = wl.filter(s => s.type === "us_index");
+          const usIdx = usList.map(us => mk(us.name, us.quote.price, us.quote.change_percent, us.quote.chg_5d, us.quote.chg_20d, us.quote.chg_60d, us.quote.chg_ytd, us.quote.high_52week, us.quote.low_52week));
+          return [sh, sz, cyb, hsIdx, ...usIdx].filter(Boolean);
         },
         tickerItems() {
           const ix = this.indices.map(i => ({ name: i.name, price: i.close, chg: i.pct }));
@@ -460,6 +510,25 @@
             { title: "领涨概念", list: s.leading_concepts || [] },
             { title: "领跌概念", list: s.lagging_concepts || [] },
           ];
+        },
+        summaryLine() {
+          if (!this.data) return "";
+          const b = this.data.market.breadth;
+          const sh = this.indices.find(i => i.name === "上证指数");
+          const cyb = this.indices.find(i => i.name === "创业板指");
+          const p = [];
+          if (sh) p.push("沪" + this.signed(sh.pct) + "%");
+          if (cyb) p.push("创业" + this.signed(cyb.pct) + "%");
+          p.push("涨" + b.upCount + "/跌" + b.downCount);
+          return p.join(" · ");
+        },
+        sectorSummary() {
+          const lp = (this.data && this.data.market.sectors && this.data.market.sectors.leading_plates) || [];
+          return lp.length ? "领涨 " + lp[0].name + " " + this.signed(lp[0].zdf) + "%" : "";
+        },
+        clusterSummary() {
+          const cs = this.data && this.data.market.clusters;
+          return (cs && cs.length) ? cs[0].name : "";
         },
         detailMax() {
           const d = this.data ? this.data.market.breadth.detail : [];
@@ -514,6 +583,7 @@
           const i = this.dayIdx + d;
           if (i >= 0 && i < this.days.length) this.selected = this.days[i].date;
         },
+        toggle(k) { this.open[k] = !this.open[k]; },
         toggleCluster(i) {
           this.expandedCluster = this.expandedCluster === i ? null : i;
         },
