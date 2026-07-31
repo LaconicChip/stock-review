@@ -1,0 +1,22 @@
+# 系统垃圾
+.DS_Store
+
+# 日志与临时文件
+*.log
+temp_*
+cache/
+
+# 环境/密钥（本项目暂无，留着防呆）
+.env
+
+# 每日报告产物（可由 data/ 重新生成，不进版本库）
+outputs/*.html
+
+# 注意：data/ 目录【故意不忽略】——里面的 JSON 是复盘历史档案，
+# 文件小、价值高，需要进版本库留底。与通用模板不同，这是有意为之。
+
+# 项目内部状态（含 Agent 记忆笔记，禁止外传）
+.workbuddy/
+
+# 个人自选股清单（真实文件本地保留，仓库只提交示例；见 config/stocks.example.json）
+config/stocks.json

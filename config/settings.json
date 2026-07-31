@@ -1,0 +1,12 @@
+{
+  "note": "复盘参数。数值是初始经验值，跑几天后再按实际情况调。",
+  "alert_rules": {
+    "change_pct_abs": 5,
+    "turnover_rate_min": 10,
+    "volume_ratio_min": 2
+  },
+  "report": {
+    "top_sectors": 5,
+    "max_news_per_stock": 3
+  }
+}

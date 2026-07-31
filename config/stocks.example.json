@@ -1,0 +1,10 @@
+{
+  "source": "westock",
+  "note": "示例模板。真实自选股清单 config/stocks.json 已被 .gitignore 忽略、不进版本库。首次使用请：cp config/stocks.example.json config/stocks.json 再按需修改。source=westock 表示复盘时经连接器 portfolio_watchlist 从腾讯自选股 App 同步；同步失败退回 manual 手写。type 取值：stock 个股 / index 指数 / plate 板块 / us_index 美股指数。",
+  "updated_at": "TEMPLATE",
+  "stocks": [
+    { "code": "sh000001", "name": "上证指数", "type": "index" },
+    { "code": "sh000300", "name": "沪深300", "type": "index" },
+    { "code": "sh600519", "name": "贵州茅台(示例股,请替换)", "type": "stock" }
+  ]
+}

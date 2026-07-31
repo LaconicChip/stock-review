@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>股票复盘报告</title>
+  <style>
+    :root { --up:#d8392b; --down:#1a9e54; --flat:#888; --bg:#f5f6f8; --card:#fff; --line:#e6e8eb; --text:#1f2329; --sub:#6b7280; }
+    * { box-sizing: border-box; }
+    body { margin:0; padding:28px; font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--text); }
+    .wrap { max-width:920px; margin:0 auto; }
+    h1 { font-size:24px; margin:0 0 4px; }
+    .meta { color:var(--sub); font-size:13px; margin-bottom:20px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+    .card h2 { font-size:16px; margin:0 0 12px; }
+    .up { color:var(--up); } .down { color:var(--down); } .flat { color:var(--flat); }
+    .grid { display:grid; gap:12px; } .cols-2 { grid-template-columns:1fr 1fr; } .cols-4 { grid-template-columns:repeat(4,1fr); }
+    @media (max-width:760px){ .cols-2,.cols-4{ grid-template-columns:1fr; } }
+    .row { display:flex; justify-content:space-between; padding:3px 0; font-size:14px; }
+    .row .k { color:var(--sub); }
+    .big { font-size:28px; font-weight:700; }
+    .bar { display:flex; height:24px; border-radius:6px; overflow:hidden; margin:8px 0; }
+    .seg-up{background:var(--up);} .seg-down{background:var(--down);} .seg-flat{background:#c9cdd4;}
+    .bar>div{display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;}
+    .mini-table{width:100%;border-collapse:collapse;font-size:13px;}
+    .mini-table td{padding:4px 6px;border-bottom:1px solid var(--line);}
+    .mini-table td:last-child{text-align:right;}
+    ul.news{margin:6px 0 0;padding-left:18px;font-size:13px;} ul.news li{margin:4px 0;}
+    ul.news a{color:#2b5fd9;text-decoration:none;} ul.news a:hover{text-decoration:underline;}
+    .note{color:var(--sub);font-size:13px;} .pill{display:inline-block;padding:1px 7px;border-radius:10px;font-size:12px;background:#eef1f5;color:var(--sub);}
+    .stock-head{display:flex;align-items:baseline;gap:12px;margin-bottom:10px;}
+    .stock-head .name{font-size:18px;font-weight:700;} .stock-head .code{color:var(--sub);font-size:13px;}
+    .foot{color:var(--sub);font-size:12px;text-align:center;margin-top:10px;}
+  </style>
+</head>
+<body>
+  <div class="wrap" id="app"></div>
+
+  <!-- AI 每日将下面占位替换为当日 data/daily/YYYY-MM-DD.json 的内容 -->
+  <script type="application/json" id="REVIEW_DATA">__REVIEW_DATA__</script>
+
+  <script>
+    const raw = document.getElementById("REVIEW_DATA").textContent.trim();
+    const data = (raw && raw !== "__REVIEW_DATA__") ? JSON.parse(raw) : null;
+    const cls = v => v > 0 ? "up" : v < 0 ? "down" : "flat";
+    const fmtMoney = n => { if (n == null) return "-"; const yi = n/1e8; return yi>=1e4 ? (yi/1e4).toFixed(2)+" 万亿" : yi.toFixed(0)+" 亿"; };
+    const fmtCap = fmtMoney;
+    const row = (k, v, c) => v == null ? "" : `<div class="row"><span class="k">${k}</span><span class="${c||''}">${v}</span></div>`;
+
+    function render() {
+      const app = document.getElementById("app");
+      if (!data) { app.innerHTML = '<div class="card">数据未填充：请用当日 JSON 替换 REVIEW_DATA 占位。</div>'; return; }
+      const m = data.market, b = m.breadth, s = m.sectors, wl = data.watchlist;
+      const ovHtml = m.overview.map(ov => `
+        <div class="card" style="margin:0">
+          <div style="font-weight:600;margin-bottom:6px">${ov.desc} <span class="pill">${ov.group}</span></div>
+          ${ov.metrics.map(x => `<div class="row"><span class="k">${x.label}</span><span class="${typeof x.value==='number'?cls(x.value):''}">${x.value}</span></div>`).join("")}
+        </div>`).join("");
+
+      const sectorHtml = [
+        ["领涨行业", s.leading_plates], ["领跌行业", s.lagging_plates],
+        ["领涨概念", s.leading_concepts], ["领跌概念", s.lagging_concepts],
+      ].map(([t, list]) => `
+        <div><div class="note" style="margin-bottom:6px">${t}</div>
+        <table class="mini-table">${(list||[]).map(x => `<tr><td>${x.name}</td><td class="${cls(x.zdf)}">${x.zdf}%</td><td class="${cls(x.main_inflow)}">${x.main_inflow}</td></tr>`).join("")}</table>
+        ${(list&&list[0])?`<div class="note" style="margin-top:4px">领涨：${list[0].lead_stock.name} +${list[0].lead_stock.zdf}%</div>`:""}</div>`).join("");
+
+      const wlHtml = wl.map(st => {
+        const q = st.quote;
+        const news = st.news.length ? `<div class="note">新闻</div><ul class="news">${st.news.map(n=>`<li><a href="${n.url}" target="_blank" rel="noopener">${n.title}</a> <span class="note">${n.time}</span></li>`).join("")}</ul>` : "";
+        const notice = st.notice.length ? `<div class="note" style="margin-top:8px">公告</div><ul class="news">${st.notice.map(n=>`<li>${n.title} <span class="note">${n.time}</span></li>`).join("")}</ul>` : "";
+        return `<div class="card" style="margin:0">
+          <div class="stock-head"><span class="name">${st.name}</span><span class="code">${st.code}</span>
+          <span class="big ${cls(q.change_percent)}">${q.price}</span>
+          <span class="${cls(q.change_percent)}">${q.change_percent>0?'+':''}${q.change_percent}%</span></div>
+          <div class="grid cols-2" style="font-size:13px">${[
+            row("市盈率", q.pe_ratio),
+            row("市净率", q.pb_ratio),
+            row("换手率", q.turnover_rate != null ? q.turnover_rate + "%" : null),
+            row("量比", q.volume_ratio),
+            row("5日", q.chg_5d != null ? q.chg_5d + "%" : null, cls(q.chg_5d)),
+            row("20日", q.chg_20d != null ? q.chg_20d + "%" : null, cls(q.chg_20d)),
+            row("60日", q.chg_60d != null ? q.chg_60d + "%" : null, cls(q.chg_60d)),
+            row("年初至今", q.chg_ytd != null ? q.chg_ytd + "%" : null, cls(q.chg_ytd)),
+            row("总市值", q.total_market_cap != null ? fmtCap(q.total_market_cap) : null),
+            row("52周区间", (q.low_52week != null && q.high_52week != null) ? q.low_52week + "~" + q.high_52week : null),
+          ].join("")}</div>${news}${notice}</div>`;
+      }).join("");
+
+      app.innerHTML = `
+        <h1>📈 股票复盘报告</h1>
+        <div class="meta">交易日 ${data.meta.date} · 生成于 ${data.meta.generated_at} · 来源 ${data.meta.source}</div>
+
+        <div class="card">
+          <h2>大盘全景</h2>
+          <div class="grid cols-2">
+            <div>
+              <div class="row"><span class="k">上涨占比</span><span class="big ${cls(b.upRatio-50)}">${b.upRatio}%</span></div>
+              <div class="bar">
+                <div class="seg-up" style="flex:${b.upCount}">${b.upCount}涨</div>
+                <div class="seg-flat" style="flex:${b.flatCount}"></div>
+                <div class="seg-down" style="flex:${b.downCount}">${b.downCount}跌</div>
+              </div>
+              <div class="grid cols-4" style="font-size:13px">
+                <div>涨停 <b class="up">${b.upLimitCount}</b></div><div>跌停 <b class="down">${b.downLimitCount}</b></div>
+                <div>平盘 ${b.flatCount}</div><div>停牌 ${b.suspensionCount != null ? b.suspensionCount : "—"}</div>
+              </div>
+              <div class="note" style="margin-top:8px">${b.comment}</div>
+              <div class="row" style="margin-top:6px"><span class="k">两市成交额</span><span>${fmtMoney(b.totalAmount)}</span></div>
+            </div>
+            <div>
+              <div class="note" style="margin-bottom:6px">涨跌分档</div>
+              ${b.detail && b.detail.length ? b.detail.map(seg=>`<div class="row"><span class="k">${seg.section}</span><span class="${cls(seg.flag)}">${seg.count}</span></div>`).join("") : '<div class="note">该交易日为历史补做日，精细涨跌分档数据已不可回溯。</div>'}
+            </div>
+          </div>
+        </div>
+
+        <div class="card"><h2>市场总览</h2><div class="grid cols-2">${ovHtml}</div></div>
+        <div class="card"><h2>板块轮动</h2><div class="grid cols-4">${sectorHtml}</div></div>
+        <div class="card"><h2>自选股（${wl.length} 只）</h2><div class="grid cols-2">${wlHtml}</div></div>
+
+        <div class="foot">数据由腾讯自选股连接器提供，仅供复盘参考，不构成投资建议。</div>`;
+    }
+    render();
+  </script>
+</body>
+</html>

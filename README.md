@@ -1,0 +1,47 @@
+# 股票复盘系统
+
+每个交易日收盘后（15:30 左右）自动完成复盘：大盘全景 + 自选股，一份搞定。
+
+## 它产出什么（双产物）
+
+1. **本地网页** —— 纯静态 Vue 3 页面，打开 localhost 能看当日复盘、翻历史
+2. **单文件 HTML 报告** —— 存在 `outputs/`，微信直接发给朋友就能看
+
+## 怎么启动
+
+| 你要干什么 | 怎么做 |
+|---|---|
+| 看复盘网页 | 双击 `scripts/start_web.sh`（或在项目根目录跑 `python3 -m http.server 8787`），浏览器开 `http://localhost:8787/web/` |
+| 发报告给朋友 | 从 `outputs/` 里取当天的 HTML 文件，微信发出去 |
+| 改自选股 | 编辑 `config/stocks.json`（仓库已 gitignore 真实文件，首次请从 `config/stocks.example.json` 复制模板） |
+| 手动触发一次复盘 | 在 WorkBuddy 里对我说"跑一次复盘" |
+
+定时复盘由 WorkBuddy 自动化任务承担：交易日 15:30 自动拉数据、写 JSON、生成报告。
+
+## 核心目录
+
+```
+stock-review/
+  config/      自选股清单、复盘参数
+  data/        每日复盘数据（JSON，历史档案，进版本库）
+    daily/       每天一个文件：YYYY-MM-DD.json
+    index.json   日期索引，网页靠它列历史
+  web/         本地网页（Vue 3，无构建，直接打开即用）
+  templates/   HTML 报告模板
+  outputs/     生成的每日报告（不进版本库）
+  scripts/     启动脚本
+  tests/       数据契约校验
+  docs/        架构图、文件地图、交接卡
+  archive/     临时文件/日志/旧备份（见 archive/README.md）
+```
+
+## 明确不做
+
+- 登录/账号体系
+- 移动端适配
+- 上云部署
+- 交易记录复盘
+
+## 数据来源
+
+腾讯自选股连接器（westock-mcp）。需在 WorkBuddy 连接器管理页授权一次。
