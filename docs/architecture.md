@@ -7,7 +7,7 @@
                 │  触发：交易日 20:30（WorkBuddy 定时任务）  │
                 └──────────────────┬──────────────────────┘
                                    ▼
-【输入】  config/stocks.json（自选股清单）
+【输入】  portfolio_watchlist（腾讯自选股 App 实时自选股，config/stocks.json 仅作兜底）
           config/settings.json（复盘参数）
           腾讯自选股连接器（行情、板块、资金流、新闻公告）
                                    ▼

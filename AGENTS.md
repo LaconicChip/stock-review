@@ -33,7 +33,7 @@
 
 ## 每日复盘的执行流程（自动化任务的干活顺序）
 
-1. 读 `config/stocks.json`（自选股）和 `config/settings.json`（参数）
+1. 经腾讯自选股连接器 `portfolio_watchlist(limit=200)` 拉取 App 实时自选股（按 code 前缀判定 type：pt→plate / us.→us_index / sh000 或 sz399→index / 其余 sh|sz|hk→stock）；若返回空或调用失败，退回读 `config/stocks.json`（manual 兜底）。另读 `config/settings.json`（参数）
 2. 经连接器拉：大盘指数/涨跌统计/板块/资金流向 + 各自选股行情、新闻公告
 3. 按 `docs/data_contract.md` 写 `data/daily/YYYY-MM-DD.json`，并更新 `data/index.json`
 4. 按 `templates/report.html` 渲染当天报告到 `outputs/YYYY-MM-DD.html`

@@ -106,7 +106,7 @@ AI 基于当日全量数据撰写的中文复盘总结（可含 `\n\n` 分段）
 `market.overview` 中的 `technical`（大盘技术指标）、`valuation`（中证全指估值）、`rotation`（风格指数轮动）**照常分析写入**，每日不遗漏；仅前端 7.29 起不再渲染这三块卡片。契约校验仍要求它们存在于 `overview`。
 
 ## watchlist（必填，array）
-清单由 `config/stocks.json` 驱动（source=westock 时经连接器从腾讯自选股 App 同步）。
+清单由自动化经 `portfolio_watchlist` 从腾讯自选股 App 实时获取（source=westock；`config/stocks.json` 仅作同步失败兜底）。
 **v2（2026-07-30）**：清单支持混合类型，每条必带 `type`；行情分两种口径（见下）。
 
 ```json

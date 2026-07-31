@@ -17,7 +17,7 @@
 | 重启服务 | `bash scripts/start_web.sh restart` |
 | 浏览器打开 | `http://localhost:8787/web/index.html` |
 | 发报告给朋友 | 从 `outputs/` 取当天的 HTML 文件，微信发出去 |
-| 改自选股 | 编辑 `config/stocks.json`（真实文件已 gitignore，首次从 `config/stocks.example.json` 复制模板） |
+| 改自选股 | 在腾讯自选股 App 里增删即可，次日 20:30 复盘自动同步；本地兜底清单见 `config/stocks.json`（gitignore，首次从 `config/stocks.example.json` 复制） |
 | 手动触发一次复盘 | 在 WorkBuddy 里说"跑一次复盘" |
 
 > 服务脚本支持 `start | stop | restart | status` 四个子命令，无参数默认 `start`。
