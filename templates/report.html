@@ -209,9 +209,9 @@
       const sz = mk("深证成指", t.CLOSE_PRICE_SZCZ, t.CHANGE_PCT_SZCZ, iv.CHG_5D_SZCZ, iv.CHG_20D_SZCZ, null, iv.CHG_250D_SZCZ, null, null);
       const cyb = mk("创业板指", t.CLOSE_PRICE_CYBZ, t.CHANGE_PCT_CYBZ, iv.CHG_5D_CYBZ, iv.CHG_20D_CYBZ, null, iv.CHG_250D_CYBZ, null, null);
       const hs = getWL("sh000300");
-      const hsIdx = hs ? mk("沪深300", hs.quote.price, hs.quote.change_percent, hs.quote.chg_5d, hs.quote.chg_20d, hs.quote.chg_60d, hs.quote.chg_ytd, hs.quote.high_52week, hs.quote.low_52week) : null;
+      const hsIdx = hs ? mk("沪深300", hs.quote.price, hs.quote.change_percent, hs.quote.chg_5d, hs.quote.chg_20d, hs.quote.chg_60d, hs.quote.chg_250d, hs.quote.high_52week, hs.quote.low_52week) : null;
       const usList = wl.filter(s => s.type === "us_index");
-      const usIdx = usList.map(us => mk(us.name, us.quote.price, us.quote.change_percent, us.quote.chg_5d, us.quote.chg_20d, us.quote.chg_60d, us.quote.chg_ytd, us.quote.high_52week, us.quote.low_52week));
+      const usIdx = usList.map(us => mk(us.name, us.quote.price, us.quote.change_percent, us.quote.chg_5d, us.quote.chg_20d, us.quote.chg_60d, us.quote.chg_250d, us.quote.high_52week, us.quote.low_52week));
       return [sh, sz, cyb, hsIdx, ...usIdx].filter(Boolean);
     }
     function sectorBlocks() {
@@ -255,7 +255,7 @@
           <span>5日 <b class="${cls(ix.c5)}">${signed(ix.c5)}</b></span>
           <span>20日 <b class="${cls(ix.c20)}">${signed(ix.c20)}</b></span>
           ${ix.c60 != null ? `<span>60日 <b class="${cls(ix.c60)}">${signed(ix.c60)}</b></span>` : ""}
-          <span>250日 <b class="${cls(ix.c250)}">${signed(ix.c250)}</b></span>
+          ${ix.c250 != null ? `<span>250日 <b class="${cls(ix.c250)}">${signed(ix.c250)}</b></span>` : ""}
         </div>
       </div>`;
     }

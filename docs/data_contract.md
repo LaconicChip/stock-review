@@ -129,7 +129,7 @@ AI 基于当日全量数据撰写的中文复盘总结（可含 `\n\n` 分段）
 | change / change_percent | number | ✅ | 涨跌额/涨跌幅(%)，由昨收计算 |
 | volume / amount | number | ✅ | 成交量/成交额（元） |
 | turnover_rate | number \| null | ✅ | 换手率(%)（K线 exchange 字段；美股等无意义置 null） |
-| chg_5d / chg_20d / chg_60d / chg_ytd | number \| null | ✅ | 区间涨跌幅(%)，按交易日数；**新股/数据不足置 null，不编造** |
+| chg_5d / chg_20d / chg_60d / chg_250d / chg_ytd | number \| null | ✅ | 区间涨跌幅(%)，按交易日数；**新股/数据不足置 null，不编造** |
 | high_52week / low_52week | number | ✅ | 52周高/低（年窗口内最高/最低；上市不足一年取实际区间） |
 
 **口径 B：实时快照（`data_quote`），仅用于"当日收盘后"生成当天数据**
@@ -161,3 +161,4 @@ AI 基于当日全量数据撰写的中文复盘总结（可含 `\n\n` 分段）
 - v2（2026-07-30）：watchlist 加 `type`（stock/index/plate/us_index）；quote 分日K/实时两口径，区间与新股字段允许 null；news/notice 限定仅 stock 类型并加时间过滤规则。驱动原因：真实清单同步后含指数/板块/美股指数，且补做历史日必须走日K。
 - v3（2026-07-30）：新增 `market.new_highs`（百日新高家数，连接器仅120日口径且无个股列表）、`market.clusters`（板块主题聚类导航，来自资金流排名）、`market.conclusion`（AI 复盘总结）；`technical`/`valuation`/`rotation` 改为前端隐藏但数据仍必产。驱动原因：用户要求前端新增百日新高/集群导航/核心结论三板块，并隐藏大盘技术/估值/风格三块（数据保留）。
 - v4（2026-07-30）：放宽 `market.breadth` —— `suspensionCount` 允许 `null`、`detail` 允许空数组 `[]`，仅用于**历史补做日**（`data_changedist` 为实时接口、补做时已滚动到当日，精细分档与停牌家数不可回溯）。当日收盘后正常生成的数据仍应填充真实值。校验脚本与前端同步降级：空 `detail` 不渲染分布条、显示历史补做说明；`suspensionCount` 为 `null` 时显示 `—`。驱动原因：补做 7.30 数据时连接器 `data_changedist` 已返回 7.31，`breadth.detail`/`suspensionCount` 不可回溯。
+- v5（2026-07-31）：watchlist[].quote 口径A 新增可选字段 `chg_250d`（number|null，250日涨跌幅%）。A股主板三大指数仍取自 `overview.interval` 的 `CHG_250D_*`，沪深300 取自 `overview.rotation` 的 `CHG_250D_HS300`，美股指数(us_index) 经 `data_kline` 回算。驱动原因：报告"今日指数"卡片含 250日 列，原模板误将 `chg_ytd` 当作 250日 填充（仅 A股三大指数有真实 250日，沪深300/标普500 显示错值或空），现已修正为读取 `chg_250d` 并增加 `null` 置空保护；标普500 经 `data_kline` 回算补入 5/20/60/250日 与 52周 高低。
