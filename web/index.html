@@ -188,12 +188,6 @@
                     border-radius: 0 0 6px 6px; margin-top: -1px; }
     .inflow { font-family: var(--mono); }
 
-    /* ===== 历史校验链接 ===== */
-    .histlink { display: flex; align-items: center; gap: 10px; padding: 11px 2px;
-                border-bottom: 1px solid var(--hairline); color: var(--ink); text-decoration: none; font-size: 14px; }
-    .histlink:last-of-type { border-bottom: none; }
-    .histlink:hover { color: var(--link); }
-
     /* ===== 过渡与无障碍 ===== */
     .fade-enter-active, .fade-leave-active { transition: opacity 180ms ease-out; }
     .fade-enter-from, .fade-leave-to { opacity: 0; }
@@ -435,19 +429,6 @@
           </div></div>
         </section>
 
-        <!-- 历史校验（默认折叠，只读索引） -->
-        <section class="module" :class="{ open: open.history }">
-          <button class="acc-header" @click="toggle('history')" :aria-expanded="open.history">
-            <span class="chev">▸</span><span class="htitle">历史校验</span>
-            <span class="hsum">{{ days.length }} 个交易日</span>
-          </button>
-          <div class="acc-body"><div class="inner card">
-            <a class="histlink" v-for="d in daysReversed" :key="d.date" :href="'../outputs/' + d.date + '.html'" target="_blank" rel="noopener">
-              <span>{{ d.date }}</span><span class="hsum" style="margin-left:auto">查看报告 ↗</span>
-            </a>
-            <p class="comment">仅读取 data/index.json，不触发任何数据重算或外部接口。</p>
-          </div></div>
-        </section>
       </main>
     </transition>
 
@@ -460,7 +441,7 @@
       data() {
         return {
           days: [], selected: "", data: null, loading: true, error: "", expandedCluster: null,
-          open: { overview: true, sectors: false, clusters: false, watchlist: false, history: false },
+          open: { overview: true, sectors: false, clusters: false, watchlist: false },
         };
       },
       computed: {
