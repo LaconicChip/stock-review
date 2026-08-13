@@ -49,6 +49,7 @@
 | WorkBuddy 自动化任务 | 交易日 20:30 触发复盘（Recurring 周一~周五，已创建） | ✅ |
 | scripts/start_web.sh | 本地网页服务快速启停控制器（start/stop/restart/status，http.server 后台守护 + pidfile） | ✅ |
 | scripts/build_report.py | 把当日 JSON 嵌入模板生成 outputs/报告 | ✅ |
+| scripts/backfill_daily.py | 历史补做日通用构建脚本（K线行情 + overview + fund → 组装当日 JSON；用法见文件头） | ✅ |
 
 ## 归档
 
