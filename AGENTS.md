@@ -35,7 +35,9 @@
 
 1. 经腾讯自选股连接器 `portfolio_watchlist(limit=200)` 拉取 App 实时自选股（按 code 前缀判定 type：pt→plate / us.→us_index / sh000 或 sz399→index / 其余 sh|sz|hk→stock）；若返回空或调用失败，退回读 `config/stocks.json`（manual 兜底）。另读 `config/settings.json`（参数）
 2. 经连接器拉：大盘指数/涨跌统计/板块/资金流向 + 各自选股行情、新闻公告
-3. 按 `docs/data_contract.md` 写 `data/daily/YYYY-MM-DD.json`，并更新 `data/index.json`
-4. 按 `templates/report.html` 渲染当天报告到 `outputs/YYYY-MM-DD.html`
-5. 用 `tests/validate_data.py` 校验当天 JSON，通过才算完成
-6. 更新交接卡"今日复盘记录"一节
+3. **搜索今日科技热点新闻**（WebSearch，聚焦当日）：① 重要产品发布/功能更新/领域新闻（OpenAI、Google、Anthropic 等；半导体、电池、锂矿、创新药、电力、光模块、航天等）；② 融资事件与行业并购；③ 技术突破或重要论文；④ 行业标准与规范动态（AI 安全框架、数据治理标准等）→ 整理为 `market.news`（契约 v6）
+4. **撰写买卖建议** `market.recommendations`（契约 v6）：基于新闻+大盘+自选股给出 `market_analysis`（国内金融形势）、`buy`（推荐买入）、`take_profit`（推荐止盈）、`traditional_note`（传统行业如白酒/电力分析）；仅供参考、禁止凭空推荐
+5. 按 `docs/data_contract.md` 写 `data/daily/YYYY-MM-DD.json`（含 news/recommendations），并更新 `data/index.json`
+6. 按 `templates/report.html` 渲染当天报告到 `outputs/YYYY-MM-DD.html`
+7. 用 `tests/validate_data.py` 校验当天 JSON，通过才算完成
+8. 更新交接卡"今日复盘记录"一节（含新闻要点与买卖建议摘要）

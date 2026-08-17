@@ -152,6 +152,48 @@ def validate(obj, fname_date=None):
         if not isinstance(market.get("conclusion"), str):
             err(errors, "market.conclusion", "必填 string")
 
+        # news（可选，v6；缺失放行）
+        news = market.get("news")
+        if news is not None:
+            if not isinstance(news, dict):
+                err(errors, "market.news", "应为 object（可选）")
+            else:
+                for f in ("date", "focus"):
+                    if not isinstance(news.get(f), str) or news.get(f) == "":
+                        err(errors, f"market.news.{f}", "必填非空 string")
+                items = news.get("items")
+                if not isinstance(items, list):
+                    err(errors, "market.news.items", "应为 array")
+                else:
+                    allowed = ("product", "funding", "research", "standard")
+                    for i, it in enumerate(items):
+                        ip = f"market.news.items[{i}]"
+                        if not isinstance(it.get("category"), str) or it.get("category") not in allowed:
+                            err(errors, f"{ip}.category", f"应为枚举之一 {allowed}")
+                        for f in ("title", "summary", "source"):
+                            if not isinstance(it.get(f), str) or it.get(f) == "":
+                                err(errors, f"{ip}.{f}", "必填非空 string")
+
+        # recommendations（可选，v6；缺失放行）
+        rec = market.get("recommendations")
+        if rec is not None:
+            if not isinstance(rec, dict):
+                err(errors, "market.recommendations", "应为 object（可选）")
+            else:
+                for f in ("date", "market_analysis", "traditional_note"):
+                    if not isinstance(rec.get(f), str):
+                        err(errors, f"market.recommendations.{f}", "必填 string")
+                for key in ("buy", "take_profit"):
+                    arr = rec.get(key)
+                    if not isinstance(arr, list):
+                        err(errors, f"market.recommendations.{key}", "应为 array")
+                    else:
+                        for i, it in enumerate(arr):
+                            ip = f"market.recommendations.{key}[{i}]"
+                            for f in ("name", "code", "reason", "risk"):
+                                if not isinstance(it.get(f), str):
+                                    err(errors, f"{ip}.{f}", "必填 string")
+
     # ---- watchlist ----
     wl = obj.get("watchlist")
     if not isinstance(wl, list):

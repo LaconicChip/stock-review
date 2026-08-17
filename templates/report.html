@@ -165,6 +165,28 @@
                     border-radius: 0 0 6px 6px; margin-top: -1px; }
     .cluster.open .cluster-body { display: block; }
     .inflow { font-family: var(--mono); }
+
+    /* ===== 科技新闻与买卖建议（v6） ===== */
+    .news-focus { font-weight: 600; margin-bottom: 10px; }
+    .news-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .news-group { display: flex; flex-direction: column; gap: 6px; }
+    .news-item { display: flex; flex-direction: column; gap: 2px; padding: 6px 9px;
+                 border: 1px solid var(--hairline); border-radius: 6px; background: #fff; }
+    .news-link { color: var(--link); text-decoration: none; font-weight: 600; font-size: 13px; }
+    .news-link:hover { text-decoration: underline; }
+    .news-title2 { font-weight: 600; font-size: 13px; }
+    .news-sum { color: var(--ink2); font-size: 12.5px; line-height: 1.6; }
+    .news-src { color: var(--ink2); font-size: 11px; opacity: .85; }
+    .reco-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .reco-item { padding: 8px 10px; border: 1px solid var(--hairline); border-radius: 6px;
+                 background: #fff; margin-bottom: 8px; }
+    .reco-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+    .reco-head b { font-size: 14px; }
+    .reco-code { color: var(--ink2); font-size: 11px; font-family: var(--mono); }
+    .reco-reason { font-size: 12.5px; line-height: 1.65; }
+    .reco-risk { font-size: 12px; color: var(--ink2); line-height: 1.6; margin-top: 2px; }
+    .reco-analysis { margin-top: 14px; border-top: 1px dashed var(--hairline); padding-top: 10px; }
+    @media (max-width: 760px) { .news-grid, .reco-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -364,6 +386,38 @@
 
       const watchBody = `<div class="grid cols-2">${wl.map(stockCard).join("")}</div>`;
 
+      // ---- v6: 科技新闻 ----
+      const CATS = [
+        ["product", "产品发布 / 领域动态"],
+        ["funding", "融资与并购"],
+        ["research", "技术突破 / 重要论文"],
+        ["standard", "标准与规范动态"],
+      ];
+      const newsBody = m.news ? `
+        <p class="comment news-focus">📌 ${esc(m.news.focus || "")}</p>
+        <div class="news-grid">${CATS.map(([key, title]) => {
+          const its = (m.news.items || []).filter(i => i.category === key);
+          if (!its.length) return "";
+          return `<div class="news-group"><div class="plate-title">${title}</div>${its.map(n => `
+            <div class="news-item">
+              ${n.url ? `<a class="news-link" href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a>` : `<span class="news-title2">${esc(n.title)}</span>`}
+              <span class="news-sum">${esc(n.summary || "")}</span>
+              <span class="news-src">${esc(n.source || "")}</span>
+            </div>`).join("")}</div>`;
+        }).join("")}</div>` : "";
+
+      // ---- v6: 买卖建议 ----
+      const reco = m.recommendations;
+      const recoItem = (r, side) => `<div class="reco-item"><div class="reco-head"><b class="${side === "buy" ? "up" : "down"}">${esc(r.name)}</b><span class="reco-code">${esc(r.code || "")}</span></div>
+        <div class="reco-reason">${side === "buy" ? "买点" : "止盈"}：${esc(r.reason || "")}</div><div class="reco-risk">风险：${esc(r.risk || "")}</div></div>`;
+      const recoBody = reco ? `
+        <div class="reco-grid">
+          <div><div class="plate-title">推荐买入</div>${(reco.buy || []).map(r => recoItem(r, "buy")).join("") || '<p class="comment">今日无推荐买入标的。</p>'}</div>
+          <div><div class="plate-title">推荐止盈</div>${(reco.take_profit || []).map(r => recoItem(r, "sell")).join("") || '<p class="comment">今日无推荐止盈标的。</p>'}</div>
+        </div>
+        <div class="reco-analysis"><div class="plate-title">国内金融形势</div><p class="comment" style="margin:0;white-space:pre-line">${esc(reco.market_analysis || "")}</p></div>
+        ${reco.traditional_note ? `<div class="reco-analysis"><div class="plate-title">传统行业分析（白酒/电力等）</div><p class="comment" style="margin:0;white-space:pre-line">${esc(reco.traditional_note)}</p></div>` : ""}` : "";
+
       const mod = (key, title, hsum, body, openByDefault) => `<section class="module${openByDefault ? " open" : ""}">
           <button class="acc-header" data-mod="${key}"><span class="chev">▸</span><span class="htitle">${title}</span><span class="hsum">${esc(hsum)}</span></button>
           <div class="acc-body"><div class="inner card">${body}</div></div>
@@ -388,6 +442,8 @@
         ${mod("overview", "大盘全景", summaryLine, overviewBody, true)}
         ${mod("sectors", "板块轮动", sectorSum, sectorBody, false)}
         ${mod("clusters", "资金簇", clusterSum, clusterBody, false)}
+        ${m.news ? mod("news", "科技新闻", (m.news.items || []).length + " 条", newsBody, false) : ""}
+        ${reco ? mod("reco", "买卖建议", "买入 " + (reco.buy || []).length + " · 止盈 " + (reco.take_profit || []).length, recoBody, false) : ""}
         ${mod("watchlist", "自选股", wl.length + " 只", watchBody, false)}
 
         <footer>数据由腾讯自选股连接器提供 · 仅供复盘参考，不构成投资建议</footer>`;

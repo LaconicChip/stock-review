@@ -102,6 +102,41 @@
 ### market.conclusion（必填，string）—— 今日核心结论
 AI 基于当日全量数据撰写的中文复盘总结（可含 `\n\n` 分段），前端 `white-space: pre-line` 渲染。
 
+### market.news（可选，object）—— 科技新闻板块（v6 新增，2026-08-17 起每日必产）
+AI 搜索当日科技板块热点新闻整理（重点：OpenAI/Google/Anthropic 等公司动态，半导体、电池、锂矿、创新药、电力、光模块、航天等科技领域）。**历史文件可缺失，前端降级隐藏**。
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|:---:|---|
+| date | string | ✅ | 交易日 `YYYY-MM-DD` |
+| focus | string | ✅ | 一句话点题（今日科技主线） |
+| items | array | ✅ | 新闻条目列表（可为空数组，但补做日建议诚实留空而非编造） |
+
+`items[]` 每项结构（**category 必须为枚举之一**）：
+```json
+{
+  "category": "product",        // 枚举：product 产品/发布 | funding 融资并购 | research 技术突破/论文 | standard 标准规范
+  "title": "OpenAI 发布新模型...",
+  "summary": "一句话摘要",
+  "source": "TechCrunch / 财联社",
+  "url": "https://..."          // 可选
+}
+```
+前端按 category 分组渲染四个卡片（产品发布/融资并购/技术突破/标准规范），缺失枚举不渲染对应卡片。
+
+### market.recommendations（可选，object）—— 买入/止盈建议（v6 新增，2026-08-17 起每日必产）
+AI 结合当日新闻、大盘形势与自选股表现给出的参考建议。**仅供参考，不构成投资建议。历史文件可缺失，前端降级隐藏。**
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|:---:|---|
+| date | string | ✅ | 交易日 `YYYY-MM-DD` |
+| market_analysis | string | ✅ | 国内金融形势分析（流动性/政策/情绪/风险偏好） |
+| buy | array | ✅ | 推荐关注/买入列表（可空数组），每项 `{ "name", "code", "reason", "risk" }` |
+| take_profit | array | ✅ | 推荐止盈列表（可空数组），每项同上 |
+| traditional_note | string | ✅ | 传统行业（如白酒、电力）走势分析 |
+
+`buy[]` / `take_profit[]` 每项：
+```json
+{ "name": "半导体", "code": "pt01801081", "reason": "资金流+价格共振，突破前高", "risk": "估值高位、情绪过热" }
+```
+
 ### 前端隐藏字段（数据仍必产）
 `market.overview` 中的 `technical`（大盘技术指标）、`valuation`（中证全指估值）、`rotation`（风格指数轮动）**照常分析写入**，每日不遗漏；仅前端 7.29 起不再渲染这三块卡片。契约校验仍要求它们存在于 `overview`。
 
@@ -154,7 +189,9 @@ AI 基于当日全量数据撰写的中文复盘总结（可含 `\n\n` 分段）
 6. `watchlist` 为数组；每项含 `code`/`name`/`quote`（含 `price`/`change_percent` 为 number）/`news`/`notice`（均为 array）。
 7. `market.new_highs` 含 `count`(number)/`window`/`as_of`/`note`（string）；`market.clusters` 为非空数组，每项含 `name` + `members`（非空，元素含 `name`/`zdf`/`zljlr_yi`/`lead_stock`/`lead_zdf`）；`market.conclusion` 为 string。
 8. `market.overview` 仍须包含 `technical`/`valuation`/`rotation`（前端隐藏但数据必产）。
-9. 任一失败则退出码非 0，并打印缺失字段路径。
+9. `market.news`（可选，缺失放行）若存在：含 `date`/`focus`（string）与 `items`（array，元素含 `category`∈{product,funding,research,standard}/`title`/`summary`/`source`，`url` 可选）。
+10. `market.recommendations`（可选，缺失放行）若存在：含 `date`/`market_analysis`/`traditional_note`（string）、`buy`/`take_profit`（array，元素含 `name`/`code`/`reason`/`risk` 为 string）。
+11. 任一失败则退出码非 0，并打印缺失字段路径。
 
 ## 变更记录
 - v1（2026-07-29）：初版，watchlist 仅个股、仅实时口径（占位股茅台/宁德）。
@@ -162,3 +199,4 @@ AI 基于当日全量数据撰写的中文复盘总结（可含 `\n\n` 分段）
 - v3（2026-07-30）：新增 `market.new_highs`（百日新高家数，连接器仅120日口径且无个股列表）、`market.clusters`（板块主题聚类导航，来自资金流排名）、`market.conclusion`（AI 复盘总结）；`technical`/`valuation`/`rotation` 改为前端隐藏但数据仍必产。驱动原因：用户要求前端新增百日新高/集群导航/核心结论三板块，并隐藏大盘技术/估值/风格三块（数据保留）。
 - v4（2026-07-30）：放宽 `market.breadth` —— `suspensionCount` 允许 `null`、`detail` 允许空数组 `[]`，仅用于**历史补做日**（`data_changedist` 为实时接口、补做时已滚动到当日，精细分档与停牌家数不可回溯）。当日收盘后正常生成的数据仍应填充真实值。校验脚本与前端同步降级：空 `detail` 不渲染分布条、显示历史补做说明；`suspensionCount` 为 `null` 时显示 `—`。驱动原因：补做 7.30 数据时连接器 `data_changedist` 已返回 7.31，`breadth.detail`/`suspensionCount` 不可回溯。
 - v5（2026-07-31）：watchlist[].quote 口径A 新增可选字段 `chg_250d`（number|null，250日涨跌幅%）。A股主板三大指数仍取自 `overview.interval` 的 `CHG_250D_*`，沪深300 取自 `overview.rotation` 的 `CHG_250D_HS300`，美股指数(us_index) 经 `data_kline` 回算。驱动原因：报告"今日指数"卡片含 250日 列，原模板误将 `chg_ytd` 当作 250日 填充（仅 A股三大指数有真实 250日，沪深300/标普500 显示错值或空），现已修正为读取 `chg_250d` 并增加 `null` 置空保护；标普500 经 `data_kline` 回算补入 5/20/60/250日 与 52周 高低。
+- v6（2026-08-17）：新增 `market.news`（科技新闻板块：产品发布/融资并购/技术突破/标准规范四枚举分类）与 `market.recommendations`（买入/止盈建议 + 金融形势 + 传统行业分析）。**均为可选字段，历史文件缺失放行**（校验与前端同步降级）；2026-08-17 起每日复盘必产。驱动原因：用户要求复盘总结新增科技热点新闻覆盖（产品发布/融资并购/技术突破/标准规范），并基于新闻+大盘+自选股给出推荐买入/推荐止盈与传统行业分析。

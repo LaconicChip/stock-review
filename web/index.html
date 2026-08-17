@@ -188,6 +188,29 @@
                     border-radius: 0 0 6px 6px; margin-top: -1px; }
     .inflow { font-family: var(--mono); }
 
+    /* ===== 科技新闻与买卖建议（v6） ===== */
+    .news-focus { font-weight: 600; margin-bottom: 10px; }
+    .news-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .news-group { display: flex; flex-direction: column; gap: 6px; }
+    .news-item { display: flex; flex-direction: column; gap: 2px; padding: 6px 9px;
+                 border: 1px solid var(--hairline); border-radius: 6px; background: #fff; }
+    .news-link { color: var(--link); text-decoration: none; font-weight: 600; font-size: 13px; }
+    .news-link:hover { text-decoration: underline; }
+    .news-title2 { font-weight: 600; font-size: 13px; }
+    .news-sum { color: var(--ink2); font-size: 12.5px; line-height: 1.6; }
+    .news-src { color: var(--ink2); font-size: 11px; opacity: .85; }
+    .reco-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .reco-item { padding: 8px 10px; border: 1px solid var(--hairline); border-radius: 6px;
+                 background: #fff; margin-bottom: 8px; }
+    .reco-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+    .reco-head b { font-size: 14px; }
+    .reco-code { color: var(--ink2); font-size: 11px; font-family: var(--mono); }
+    .reco-reason { font-size: 12.5px; line-height: 1.65; }
+    .reco-risk { font-size: 12px; color: var(--ink2); line-height: 1.6; margin-top: 2px; }
+    .reco-analysis { margin-top: 14px; border-top: 1px dashed var(--hairline); padding-top: 10px; }
+    @media (max-width: 760px) { .news-grid, .reco-grid { grid-template-columns: 1fr; } }
+
+
     /* ===== 过渡与无障碍 ===== */
     .fade-enter-active, .fade-leave-active { transition: opacity 180ms ease-out; }
     .fade-enter-from, .fade-leave-to { opacity: 0; }
@@ -380,6 +403,66 @@
           </div></div>
         </section>
 
+        <!-- 科技新闻（默认折叠，v6） -->
+        <section class="module" :class="{ open: open.news }" v-if="data.market.news">
+          <button class="acc-header" @click="toggle('news')" :aria-expanded="open.news">
+            <span class="chev">▸</span><span class="htitle">科技新闻</span>
+            <span class="hsum">{{ data.market.news.focus }}</span>
+          </button>
+          <div class="acc-body"><div class="inner card">
+            <p class="comment news-focus">📌 {{ data.market.news.focus }}</p>
+            <div class="news-grid">
+              <div v-for="grp in newsGroups" :key="grp.key" class="news-group" v-if="grp.items.length">
+                <div class="plate-title">{{ grp.title }}</div>
+                <div class="news-item" v-for="(n, ni) in grp.items" :key="ni">
+                  <a v-if="n.url" :href="n.url" target="_blank" rel="noopener" class="news-link">{{ n.title }}</a>
+                  <span v-else class="news-title2">{{ n.title }}</span>
+                  <span class="news-sum">{{ n.summary }}</span>
+                  <span class="news-src">{{ n.source }}</span>
+                </div>
+              </div>
+            </div>
+          </div></div>
+        </section>
+
+        <!-- 买卖建议（默认折叠，v6） -->
+        <section class="module" :class="{ open: open.reco }" v-if="data.market.recommendations">
+          <button class="acc-header" @click="toggle('reco')" :aria-expanded="open.reco">
+            <span class="chev">▸</span><span class="htitle">买卖建议</span>
+            <span class="hsum">买入 {{ (data.market.recommendations.buy || []).length }} · 止盈 {{ (data.market.recommendations.take_profit || []).length }}</span>
+          </button>
+          <div class="acc-body"><div class="inner card">
+            <div class="reco-grid">
+              <div>
+                <div class="plate-title">推荐买入</div>
+                <div class="reco-item" v-for="(r, ri) in data.market.recommendations.buy" :key="'b' + ri">
+                  <div class="reco-head"><b class="up">{{ r.name }}</b><span class="reco-code">{{ r.code }}</span></div>
+                  <div class="reco-reason">买点：{{ r.reason }}</div>
+                  <div class="reco-risk">风险：{{ r.risk }}</div>
+                </div>
+                <p v-if="!(data.market.recommendations.buy || []).length" class="comment">今日无推荐买入标的。</p>
+              </div>
+              <div>
+                <div class="plate-title">推荐止盈</div>
+                <div class="reco-item" v-for="(r, ri) in data.market.recommendations.take_profit" :key="'t' + ri">
+                  <div class="reco-head"><b class="down">{{ r.name }}</b><span class="reco-code">{{ r.code }}</span></div>
+                  <div class="reco-reason">止盈：{{ r.reason }}</div>
+                  <div class="reco-risk">风险：{{ r.risk }}</div>
+                </div>
+                <p v-if="!(data.market.recommendations.take_profit || []).length" class="comment">今日无推荐止盈标的。</p>
+              </div>
+            </div>
+            <div class="reco-analysis">
+              <div class="plate-title">国内金融形势</div>
+              <p class="comment" style="margin:0; white-space: pre-line">{{ data.market.recommendations.market_analysis }}</p>
+            </div>
+            <div class="reco-analysis" v-if="data.market.recommendations.traditional_note">
+              <div class="plate-title">传统行业分析（白酒/电力等）</div>
+              <p class="comment" style="margin:0; white-space: pre-line">{{ data.market.recommendations.traditional_note }}</p>
+            </div>
+          </div></div>
+        </section>
+
         <!-- 自选股（默认折叠） -->
         <section class="module" :class="{ open: open.watchlist }">
           <button class="acc-header" @click="toggle('watchlist')" :aria-expanded="open.watchlist">
@@ -441,7 +524,7 @@
       data() {
         return {
           days: [], selected: "", data: null, loading: true, error: "", expandedCluster: null,
-          open: { overview: true, sectors: false, clusters: false, watchlist: false },
+          open: { overview: true, sectors: false, clusters: false, watchlist: false, news: false, reco: false },
         };
       },
       computed: {
@@ -510,6 +593,17 @@
         clusterSummary() {
           const cs = this.data && this.data.market.clusters;
           return (cs && cs.length) ? cs[0].name : "";
+        },
+        newsGroups() {
+          const n = this.data && this.data.market.news;
+          if (!n || !n.items) return [];
+          const cats = [
+            { key: "product", title: "产品发布 / 领域动态" },
+            { key: "funding", title: "融资与并购" },
+            { key: "research", title: "技术突破 / 重要论文" },
+            { key: "standard", title: "标准与规范动态" },
+          ];
+          return cats.map(c => ({ key: c.key, title: c.title, items: n.items.filter(i => i.category === c.key) }));
         },
         detailMax() {
           const d = this.data ? this.data.market.breadth.detail : [];

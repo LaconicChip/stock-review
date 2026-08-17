@@ -9,7 +9,7 @@
 |---|---|---|
 | AGENTS.md | AI 接手规则，每日复盘执行流程 | ✅ |
 | docs/architecture.md | 流程图与模块设计 | ✅ |
-| docs/data_contract.md | 数据契约（字段以连接器实测为准，已定稿 v4） | ✅ |
+| docs/data_contract.md | 数据契约（字段以连接器实测为准，已定稿 v6） | ✅ |
 | config/settings.json | 复盘参数（异动阈值等） | ✅ |
 
 ## 数据源
