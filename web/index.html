@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>收盘复盘</title>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="vendor/vue.global.prod.js"></script>
   <style>
     :root {
       --paper: #FAF7F1;
@@ -412,7 +412,7 @@
           <div class="acc-body"><div class="inner card">
             <p class="comment news-focus">📌 {{ data.market.news.focus }}</p>
             <div class="news-grid">
-              <div v-for="grp in newsGroups" :key="grp.key" class="news-group" v-if="grp.items.length">
+              <div v-for="grp in newsGroups" :key="grp.key" class="news-group">
                 <div class="plate-title">{{ grp.title }}</div>
                 <div class="news-item" v-for="(n, ni) in grp.items" :key="ni">
                   <a v-if="n.url" :href="n.url" target="_blank" rel="noopener" class="news-link">{{ n.title }}</a>
@@ -603,7 +603,9 @@
             { key: "research", title: "技术突破 / 重要论文" },
             { key: "standard", title: "标准与规范动态" },
           ];
-          return cats.map(c => ({ key: c.key, title: c.title, items: n.items.filter(i => i.category === c.key) }));
+          return cats
+            .map(c => ({ key: c.key, title: c.title, items: n.items.filter(i => i.category === c.key) }))
+            .filter(c => c.items.length > 0);
         },
         detailMax() {
           const d = this.data ? this.data.market.breadth.detail : [];
