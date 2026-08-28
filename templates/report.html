@@ -374,7 +374,7 @@
 
       const sectorBody = `<div class="grid cols-2">${sectorBlocks().map(blk => `<div>
           <div class="plate-title">${esc(blk.title)}</div>
-          ${blk.list.map((x, i) => `<div class="prow"><span class="rank">${i + 1}</span><span>${esc(x.name)}</span><span class="${cls(x.zdf)}">${signed(x.zdf)}%</span><span class="${cls(x.main_inflow)}">${fmtInflow(x.main_inflow)}</span><span class="plead">领涨 ${esc(x.lead_stock.name)} ${signed(x.lead_stock.zdf)}%</span></div>`).join("")}
+          ${blk.list.map((x, i) => `<div class="prow"><span class="rank">${i + 1}</span><span>${esc(x.name)}</span><span class="${cls(x.zdf)}">${signed(x.zdf)}%</span><span class="${cls(x.main_inflow)}">${fmtInflow(x.main_inflow)}</span><span class="plead">领涨 ${x.lead_stock ? `${esc(x.lead_stock.name)} ${signed(x.lead_stock.zdf)}%` : "—"}</span></div>`).join("")}
         </div>`).join("")}</div>
         <p class="comment">板块涨跌幅为价格指数口径；主力净流入单位万元，展示已折算。</p>`;
 
