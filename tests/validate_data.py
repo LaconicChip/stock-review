@@ -6,6 +6,7 @@ validate_data.py — 对照 docs/data_contract.md 校验当日复盘 JSON。
 用法：
   python3 tests/validate_data.py                # 校验 data/daily/ 下最新一份
   python3 tests/validate_data.py <文件路径>      # 校验指定文件
+  python3 tests/validate_data.py data/pre/YYYY-MM-DD.json --pre  # 校验盘前独立文件（meta + market.pre）
 
 规则与 docs/data_contract.md 保持一致。任一校验失败退出码为 1，并打印缺失字段路径。
 仅用 Python 标准库。
@@ -25,6 +26,63 @@ def err(errors, path, msg):
 
 def is_number(v):
     return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def validate_pre(pre, errors):
+    """校验 market.pre 结构（v7，可选字段；用于 daily 内嵌与 --pre 独立文件两种场景）。"""
+    if not isinstance(pre, dict):
+        err(errors, "market.pre", "应为 object（可选）")
+        return
+    for f in ("date", "summary"):
+        if not isinstance(pre.get(f), str) or pre.get(f) == "":
+            err(errors, f"market.pre.{f}", "必填非空 string")
+    for key in ("overseas", "headlines", "watchlist_note", "quant", "focus"):
+        if not isinstance(pre.get(key), list):
+            err(errors, f"market.pre.{key}", "必填 array")
+    if pre.get("review") is not None and not isinstance(pre.get("review"), str):
+        err(errors, "market.pre.review", "应为 string（盘后补写，可选）")
+    # overseas[]
+    for i, it in enumerate(pre.get("overseas") or []):
+        ip = f"market.pre.overseas[{i}]"
+        if not isinstance(it.get("name"), str) or it.get("name") == "":
+            err(errors, f"{ip}.name", "必填非空 string")
+        for f in ("close", "chg"):
+            if not is_number(it.get(f)):
+                err(errors, f"{ip}.{f}", "必填 number")
+    # headlines[]
+    impacts = ("positive", "negative", "neutral")
+    cats = ("macro", "policy", "tech")
+    for i, it in enumerate(pre.get("headlines") or []):
+        ip = f"market.pre.headlines[{i}]"
+        if not isinstance(it.get("text"), str) or it.get("text") == "":
+            err(errors, f"{ip}.text", "必填非空 string")
+        if it.get("impact") not in impacts:
+            err(errors, f"{ip}.impact", f"应为枚举之一 {impacts}")
+        if it.get("category") not in cats:
+            err(errors, f"{ip}.category", f"应为枚举之一 {cats}")
+    # watchlist_note[]
+    for i, it in enumerate(pre.get("watchlist_note") or []):
+        ip = f"market.pre.watchlist_note[{i}]"
+        for f in ("name", "code", "note"):
+            if not isinstance(it.get(f), str):
+                err(errors, f"{ip}.{f}", "必填 string")
+    # quant[]
+    for i, it in enumerate(pre.get("quant") or []):
+        ip = f"market.pre.quant[{i}]"
+        for f in ("name", "code", "signal"):
+            if not isinstance(it.get(f), str):
+                err(errors, f"{ip}.{f}", "必填 string")
+        for f in ("score", "confidence"):
+            if not is_number(it.get(f)):
+                err(errors, f"{ip}.{f}", "必填 number")
+    # focus[]
+    ftypes = ("level", "event", "risk", "sector")
+    for i, it in enumerate(pre.get("focus") or []):
+        ip = f"market.pre.focus[{i}]"
+        if not isinstance(it.get("text"), str) or it.get("text") == "":
+            err(errors, f"{ip}.text", "必填非空 string")
+        if it.get("type") not in ftypes:
+            err(errors, f"{ip}.type", f"应为枚举之一 {ftypes}")
 
 
 def validate(obj, fname_date=None):
@@ -194,6 +252,11 @@ def validate(obj, fname_date=None):
                                 if not isinstance(it.get(f), str):
                                     err(errors, f"{ip}.{f}", "必填 string")
 
+        # pre（可选，v7；缺失放行）
+        pre = market.get("pre")
+        if pre is not None:
+            validate_pre(pre, errors)
+
     # ---- watchlist ----
     wl = obj.get("watchlist")
     if not isinstance(wl, list):
@@ -225,8 +288,10 @@ def latest_daily():
 
 
 def main():
-    if len(sys.argv) > 1:
-        path = sys.argv[1]
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    pre_mode = "--pre" in sys.argv[1:]
+    if args:
+        path = args[0]
     else:
         path = latest_daily()
         if not path:
@@ -246,13 +311,36 @@ def main():
         print(f"读取/解析失败：{e}")
         sys.exit(1)
 
-    errors = validate(obj, fname_date)
+    if pre_mode:
+        # 盘前独立文件：只校验 meta + market.pre（结构见契约 v7）
+        errors = []
+        meta = obj.get("meta")
+        if not isinstance(meta, dict):
+            err(errors, "meta", "应为 object")
+        else:
+            for f in ("date", "generated_at", "source"):
+                if not isinstance(meta.get(f), str) or meta.get(f) == "":
+                    err(errors, f"meta.{f}", "必填且为非空 string")
+            if fname_date and meta.get("date") != fname_date:
+                err(errors, "meta.date", f"应等于文件名日期 {fname_date}，实为 {meta.get('date')}")
+        market = obj.get("market")
+        if not isinstance(market, dict):
+            err(errors, "market", "应为 object（含 pre 节）")
+        else:
+            pre = market.get("pre")
+            if pre is None:
+                err(errors, "market.pre", "盘前文件必含 pre 节")
+            else:
+                validate_pre(pre, errors)
+    else:
+        errors = validate(obj, fname_date)
+
     if errors:
         print(f"校验失败（{len(errors)} 处问题）：")
         print("\n".join(errors))
         sys.exit(1)
     else:
-        print(f"✅ 校验通过：{fname}")
+        print(f"✅ 校验通过：{fname}{'（pre 模式）' if pre_mode else ''}")
         sys.exit(0)
 
 

@@ -210,6 +210,34 @@
     .reco-analysis { margin-top: 14px; border-top: 1px dashed var(--hairline); padding-top: 10px; }
     @media (max-width: 760px) { .news-grid, .reco-grid { grid-template-columns: 1fr; } }
 
+    /* ===== 盘前速览（v7） ===== */
+    .pre-summary { font-weight: 600; margin-bottom: 10px; }
+    .pre-review { border-left: 3px solid var(--link); background: var(--card); padding: 8px 12px;
+                  margin-bottom: 12px; font-size: 12.5px; line-height: 1.65; color: var(--ink2); white-space: pre-line; }
+    .pre-review .pre-review-title { color: var(--ink); font-weight: 600; font-size: 12px; margin-bottom: 2px; }
+    .pre-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .pre-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .pre-row { display: flex; align-items: baseline; gap: 8px; padding: 5px 9px;
+               border: 1px solid var(--hairline); border-radius: 6px; background: var(--card); font-size: 12.5px; }
+    .pre-row .pre-name { font-weight: 600; min-width: 5em; }
+    .pre-row .pre-val { font-family: var(--mono); }
+    .pre-row .pre-note { color: var(--ink2); font-size: 11px; margin-left: auto; }
+    .pre-hl { display: flex; gap: 8px; padding: 6px 9px; border: 1px solid var(--hairline);
+              border-radius: 6px; background: var(--card); font-size: 12.5px; line-height: 1.6; }
+    .pre-hl .hl-dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; margin-top: 6px; }
+    .hl-pos { background: var(--up); } .hl-neg { background: var(--down); } .hl-neu { background: var(--ink2); }
+    .pre-hl .hl-tag { flex: 0 0 auto; color: var(--ink2); font-size: 11px; font-family: var(--mono); }
+    .pre-quant { display: flex; gap: 8px; padding: 5px 9px; border: 1px solid var(--hairline);
+                 border-radius: 6px; background: var(--card); font-size: 12.5px; align-items: baseline; }
+    .pre-quant .q-name { font-weight: 600; min-width: 5em; }
+    .pre-quant .q-score { font-family: var(--mono); }
+    .pre-quant .q-sig { margin-left: auto; font-size: 12px; }
+    .pre-focus { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pre-focus .f-tag { padding: 3px 10px; border: 1px solid var(--hairline); border-radius: 999px;
+                        font-size: 12px; background: var(--card); line-height: 1.6; }
+    .f-level { border-color: var(--link); } .f-risk { border-color: var(--up); }
+    @media (max-width: 760px) { .pre-grid { grid-template-columns: 1fr; } }
+
 
     /* ===== 过渡与无障碍 ===== */
     .fade-enter-active, .fade-leave-active { transition: opacity 180ms ease-out; }
@@ -403,6 +431,60 @@
           </div></div>
         </section>
 
+        <!-- 盘前速览（默认折叠，v7） -->
+        <section class="module" :class="{ open: open.pre }" v-if="data.market.pre">
+          <button class="acc-header" @click="toggle('pre')" :aria-expanded="open.pre">
+            <span class="chev">▸</span><span class="htitle">盘前速览</span>
+            <span class="hsum">{{ data.market.pre.date }} 早间 · 量化 {{ (data.market.pre.quant || []).length }} 项</span>
+          </button>
+          <div class="acc-body"><div class="inner card">
+            <p class="comment pre-summary">🌅 {{ data.market.pre.summary }}</p>
+            <div class="pre-review" v-if="data.market.pre.review">
+              <div class="pre-review-title">晚间验证 · 盘前预判 vs 实际走势</div>
+              {{ data.market.pre.review }}
+            </div>
+            <div class="pre-grid">
+              <div class="pre-group">
+                <div class="plate-title">隔夜外围</div>
+                <div class="pre-row" v-for="(o, oi) in data.market.pre.overseas" :key="'ov' + oi">
+                  <span class="pre-name">{{ o.name }}</span>
+                  <span class="pre-val">{{ o.close }}</span>
+                  <span class="pre-val" :class="cls(o.chg)">{{ signed(o.chg) }}%</span>
+                  <span class="pre-note">{{ o.note }}</span>
+                </div>
+              </div>
+              <div class="pre-group">
+                <div class="plate-title">量化预判</div>
+                <div class="pre-quant" v-for="(q, qi) in data.market.pre.quant" :key="'q' + qi">
+                  <span class="q-name">{{ q.name }}</span>
+                  <span class="q-score">{{ q.score }}分</span>
+                  <span class="q-sig" :class="sigCls(q.signal)">{{ q.signal }} {{ q.confidence }}%</span>
+                </div>
+              </div>
+              <div class="pre-group">
+                <div class="plate-title">消息面</div>
+                <div class="pre-hl" v-for="(h, hi) in data.market.pre.headlines" :key="'h' + hi">
+                  <span class="hl-dot" :class="h.impact === 'positive' ? 'hl-pos' : h.impact === 'negative' ? 'hl-neg' : 'hl-neu'"></span>
+                  <span>{{ h.text }}</span>
+                </div>
+              </div>
+              <div class="pre-group">
+                <div class="plate-title">自选晨报</div>
+                <div class="pre-hl" v-for="(w, wi) in data.market.pre.watchlist_note" :key="'w' + wi">
+                  <span class="hl-tag">{{ w.name }}</span>
+                  <span>{{ w.note }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="plate-title">今日关注</div>
+            <div class="pre-focus">
+              <span class="f-tag" :class="'f-' + f.type" v-for="(f, fi) in data.market.pre.focus" :key="'f' + fi">
+                {{ focusLabel(f.type) }} · {{ f.text }}
+              </span>
+            </div>
+          </div></div>
+        </section>
+
         <!-- 科技新闻（默认折叠，v6） -->
         <section class="module" :class="{ open: open.news }" v-if="data.market.news">
           <button class="acc-header" @click="toggle('news')" :aria-expanded="open.news">
@@ -524,7 +606,7 @@
       data() {
         return {
           days: [], selected: "", data: null, loading: true, error: "", expandedCluster: null,
-          open: { overview: true, sectors: false, clusters: false, watchlist: false, news: false, reco: false },
+          open: { overview: true, sectors: false, clusters: false, watchlist: false, news: false, reco: false, pre: false },
         };
       },
       computed: {
@@ -625,6 +707,8 @@
         },
         cls(v) { const n = Number(v); return n > 0 ? "up" : n < 0 ? "down" : "flat"; },
         clsStr(v) { return typeof v === "number" ? this.cls(v) : ""; },
+        sigCls(s) { return s.indexOf("看涨") >= 0 ? "up" : s.indexOf("看跌") >= 0 ? "down" : "flat"; },
+        focusLabel(t) { return { level: "点位", event: "事件", risk: "风险", sector: "板块" }[t] || t; },
         typeLabel(t) { return { index: "指数", plate: "板块", us_index: "美股" }[t] || ""; },
         signed(v) { const n = Number(v); if (v == null || isNaN(n)) return "-"; return (n > 0 ? "+" : "") + n; },
         round1(v) { return v == null ? null : Math.round(v * 10) / 10; },

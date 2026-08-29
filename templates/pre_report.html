@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>盘前速览 · 单文件报告</title>
+  <style>
+    :root {
+      --paper: #FAF7F1; --card: #FFFDF9; --ink: #1B1A17; --ink2: #6F6A5E;
+      --hairline: #E6E0D3; --up: #BE3226; --down: #177245; --flat: #8A857A;
+      --link: #2C4A7C;
+      --serif: "Songti SC", "STSong", "SimSun", serif;
+      --sans: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink);
+           font: 14px/1.6 var(--sans); font-variant-numeric: tabular-nums; }
+    #app { max-width: 960px; margin: 0 auto; padding: 0 20px 32px; }
+
+    .masthead { display: flex; align-items: flex-end; justify-content: space-between;
+                gap: 12px; flex-wrap: wrap; padding: 24px 0 14px; }
+    .brand h1 { font: 700 28px/1.1 var(--serif); letter-spacing: .14em; margin: 0; }
+    .brand .sub { display: block; color: var(--ink2); font-size: 12px; letter-spacing: .08em; margin-top: 6px; }
+    .meta-right { color: var(--ink2); font-size: 12px; text-align: right; line-height: 1.5; }
+
+    .card { background: var(--card); border: 1px solid var(--hairline); border-radius: 6px;
+            padding: 16px 18px; margin-bottom: 14px; }
+    h2 { font: 600 16px/1.3 var(--serif); letter-spacing: .06em; margin: 0 0 12px;
+         display: flex; align-items: baseline; gap: 10px; }
+    h2 .tag { font: 400 11px var(--sans); color: var(--ink2); letter-spacing: 0; }
+    .up { color: var(--up); } .down { color: var(--down); } .flat { color: var(--flat); }
+    .grid { display: grid; gap: 14px; }
+    .cols-2 { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 760px) { .cols-2 { grid-template-columns: 1fr; } }
+    .plate-title { font: 600 12px var(--serif); letter-spacing: .06em; color: var(--ink2);
+                   margin: 0 0 8px; }
+    .comment { margin: 10px 0 0; color: var(--ink2); font-size: 13px; }
+
+    .summary-hero { border-left: 3px solid var(--link); }
+    .summary { white-space: pre-line; line-height: 1.85; color: var(--ink); font-size: 13.5px; margin: 0; }
+
+    .ov-row { display: flex; align-items: baseline; gap: 10px; padding: 5px 9px;
+              border: 1px solid var(--hairline); border-radius: 6px; background: var(--card);
+              font-size: 12.5px; margin-bottom: 6px; }
+    .ov-row .ov-name { font-weight: 600; min-width: 6em; }
+    .ov-row .ov-val { font-family: var(--mono); }
+    .ov-row .ov-note { color: var(--ink2); font-size: 11px; margin-left: auto; }
+
+    .hl { display: flex; gap: 8px; padding: 6px 9px; border: 1px solid var(--hairline);
+          border-radius: 6px; background: var(--card); font-size: 12.5px; line-height: 1.6; margin-bottom: 6px; }
+    .hl .hl-dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; margin-top: 6px; }
+    .hl-pos { background: var(--up); } .hl-neg { background: var(--down); } .hl-neu { background: var(--ink2); }
+    .hl .hl-tag { flex: 0 0 auto; color: var(--ink2); font-size: 11px; font-family: var(--mono); }
+
+    .q-row { display: flex; gap: 10px; padding: 5px 9px; border: 1px solid var(--hairline);
+             border-radius: 6px; background: var(--card); font-size: 12.5px;
+             align-items: baseline; margin-bottom: 6px; }
+    .q-row .q-name { font-weight: 600; min-width: 6em; }
+    .q-row .q-score { font-family: var(--mono); }
+    .q-row .q-sig { margin-left: auto; font-size: 12px; }
+
+    .f-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+    .f-tag { padding: 3px 10px; border: 1px solid var(--hairline); border-radius: 999px;
+             font-size: 12px; background: var(--card); line-height: 1.6; }
+    .f-level { border-color: var(--link); } .f-risk { border-color: var(--up); }
+
+    footer { color: var(--ink2); font-size: 11.5px; text-align: center; padding: 18px 0 0;
+             letter-spacing: .04em; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    const DATA = __PRE_DATA__;
+
+    const esc = s => String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    const cls = v => { const n = Number(v); return n > 0 ? "up" : n < 0 ? "down" : "flat"; };
+    const signed = v => { const n = Number(v); if (v == null || isNaN(n)) return "-"; return (n > 0 ? "+" : "") + n; };
+
+    (function render() {
+      const app = document.getElementById("app");
+      const m = DATA.market || {};
+      const pre = m.pre || {};
+      const meta = DATA.meta || {};
+
+      const ov = (pre.overseas || []).map(o => `
+        <div class="ov-row"><span class="ov-name">${esc(o.name)}</span>
+          <span class="ov-val">${esc(o.close)}</span>
+          <span class="ov-val ${cls(o.chg)}">${signed(o.chg)}%</span>
+          <span class="ov-note">${esc(o.note || "")}</span></div>`).join("");
+
+      const hl = (pre.headlines || []).map(h => `
+        <div class="hl"><span class="hl-dot ${h.impact === "positive" ? "hl-pos" : h.impact === "negative" ? "hl-neg" : "hl-neu"}"></span>
+          <span>${esc(h.text)}</span></div>`).join("");
+
+      const wl = (pre.watchlist_note || []).map(w => `
+        <div class="hl"><span class="hl-tag">${esc(w.name)}</span><span>${esc(w.note)}</span></div>`).join("");
+
+      const quant = (pre.quant || []).map(q => `
+        <div class="q-row"><span class="q-name">${esc(q.name)}</span>
+          <span class="q-score">${q.score}分</span>
+          <span class="q-sig ${q.signal.indexOf("看涨") >= 0 ? "up" : q.signal.indexOf("看跌") >= 0 ? "down" : "flat"}">${esc(q.signal)} ${q.confidence}%</span></div>`).join("");
+
+      const focus = (pre.focus || []).map(f => {
+        const lbl = { level: "点位", event: "事件", risk: "风险", sector: "板块" }[f.type] || f.type;
+        return `<span class="f-tag f-${esc(f.type)}">${lbl} · ${esc(f.text)}</span>`;
+      }).join("");
+
+      app.innerHTML = `
+        <header class="masthead">
+          <div class="brand"><h1>盘前速览</h1><span class="sub">A 股开盘前 · 隔夜与晨间情报</span></div>
+          <div class="meta-right">交易日 ${esc(pre.date || meta.date)}<br>来源 ${esc(meta.source || "")}${meta.generated_at ? " · 生成 " + esc(meta.generated_at) : ""}</div>
+        </header>
+
+        <section class="card summary-hero">
+          <div class="chead" style="display:flex;align-items:center;gap:8px;font:600 14px var(--serif);letter-spacing:.05em;margin-bottom:8px;">
+            <span>盘前总结</span><span style="margin-left:auto;font:400 11px var(--sans);color:var(--ink2);">09:05 盘前自动化 · 仅供参考</span>
+          </div>
+          <p class="summary">${esc(pre.summary || "")}</p>
+        </section>
+
+        <section class="card">
+          <h2>隔夜外围市场<span class="tag">指数 / 汇率 / 商品</span></h2>
+          <div class="grid cols-2"><div>${ov}</div></div>
+        </section>
+
+        <section class="card">
+          <h2>消息面要点<span class="tag">宏观 / 政策 / 科技</span></h2>
+          ${hl || '<p class="comment">暂无重要消息。</p>'}
+        </section>
+
+        <section class="card">
+          <h2>自选股晨报<span class="tag">昨日回顾 / 公告 / 异动</span></h2>
+          ${wl || '<p class="comment">自选股无重要变化。</p>'}
+        </section>
+
+        <section class="card">
+          <h2>量化预判<span class="tag">stock-researcher 七维评分</span></h2>
+          ${quant || '<p class="comment">今日未运行量化预判。</p>'}
+        </section>
+
+        <section class="card">
+          <h2>今日关注<span class="tag">点位 / 事件 / 风险 / 板块</span></h2>
+          <div class="f-tags">${focus}</div>
+        </section>
+
+        <footer>盘前速览由 WorkBuddy 自动化于开盘前生成 · 数据源：腾讯自选股连接器 / stock-researcher · 仅供参考，不构成投资建议</footer>`;
+    })();
+  </script>
+</body>
+</html>

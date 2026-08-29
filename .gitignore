@@ -18,6 +18,10 @@ outputs/*.json
 # 每日复盘数据与索引（个人记录，本地保留）
 data/daily/*.json
 data/index.json
+
+# 盘前速览数据与报告（个人记录，本地保留，v7 起）
+data/pre/*.json
+outputs/pre/
 *.bak_*
 
 # 归档区（原始抓取数据、临时脚本、旧备份）

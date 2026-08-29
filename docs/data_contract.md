@@ -137,6 +137,27 @@ AI 结合当日新闻、大盘形势与自选股表现给出的参考建议。**
 { "name": "半导体", "code": "pt01801081", "reason": "资金流+价格共振，突破前高", "risk": "估值高位、情绪过热" }
 ```
 
+### market.pre（可选，object）—— 盘前速览（v7 新增，盘前自动化每日必产）
+盘前自动化（工作日 09:05）产出，先落盘 `data/pre/YYYY-MM-DD.json`（结构 `{ meta, market: { pre } }`）；晚间复盘时读取该文件，将 `market.pre` 整体并入当日 daily JSON，并基于当日实际走势补写 `review`（预判验证）。**历史文件可缺失，前端降级隐藏。**
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|:---:|---|
+| date | string | ✅ | 交易日 `YYYY-MM-DD` |
+| overseas | array | ✅ | 隔夜外围市场（美股三大指数/美元指数/离岸人民币/原油/黄金等），每项 `{ "name", "close", "chg", "note" }`；note 如 `"美东8.28周五收盘"`（口径说明） |
+| headlines | array | ✅ | 消息面要点（≤6 条），每项 `{ "text", "impact", "category" }`；impact 枚举 `positive\|negative\|neutral`，category 枚举 `macro\|policy\|tech` |
+| watchlist_note | array | ✅ | 自选股晨报（昨日收盘回顾/公告/异动一句话），每项 `{ "name", "code", "note" }` |
+| quant | array | ✅ | 量化预判（stock-researcher 打分），每项 `{ "name", "code", "score", "signal", "confidence" }`（signal 如 `"看涨"`，confidence 为百分比数值） |
+| focus | array | ✅ | 今日关注，每项 `{ "type", "text" }`；type 枚举 `level\|event\|risk\|sector` |
+| summary | string | ✅ | 盘前总结（一段话：今日基调预判 + 操作要点） |
+| review | string | - | **盘后补写**：预判验证（盘前 summary/focus 与当日实际走势对照，命中与否如实写） |
+
+`data/pre/YYYY-MM-DD.json` 顶层结构（供盘前校验）：
+```json
+{
+  "meta": { "date": "2026-08-31", "generated_at": "2026-08-31T09:05:00", "source": "westock-mcp", "note": "盘前速览" },
+  "market": { "pre": { ...上表结构... } }
+}
+```
+
 ### 前端隐藏字段（数据仍必产）
 `market.overview` 中的 `technical`（大盘技术指标）、`valuation`（中证全指估值）、`rotation`（风格指数轮动）**照常分析写入**，每日不遗漏；仅前端 7.29 起不再渲染这三块卡片。契约校验仍要求它们存在于 `overview`。
 
@@ -191,6 +212,7 @@ AI 结合当日新闻、大盘形势与自选股表现给出的参考建议。**
 8. `market.overview` 仍须包含 `technical`/`valuation`/`rotation`（前端隐藏但数据必产）。
 9. `market.news`（可选，缺失放行）若存在：含 `date`/`focus`（string）与 `items`（array，元素含 `category`∈{product,funding,research,standard}/`title`/`summary`/`source`，`url` 可选）。
 10. `market.recommendations`（可选，缺失放行）若存在：含 `date`/`market_analysis`/`traditional_note`（string）、`buy`/`take_profit`（array，元素含 `name`/`code`/`reason`/`risk` 为 string）。
+11. `market.pre`（可选，v7，缺失放行）若存在：含 `date`/`summary`（非空 string）与 `overseas`/`headlines`/`watchlist_note`/`quant`/`focus`（array）；`overseas[]` 每项含 `name`(string)/`close`(number)/`chg`(number)，`note` 可选 string；`headlines[]` 每项含 `text`(string) 与枚举 `impact`∈{positive,negative,neutral}、`category`∈{macro,policy,tech}；`watchlist_note[]` 每项含 `name`/`code`/`note`(string)；`quant[]` 每项含 `name`/`code`/`signal`(string) 与 `score`/`confidence`(number)；`focus[]` 每项含 `text`(string) 与枚举 `type`∈{level,event,risk,sector}；`review` 可选 string。盘前独立文件校验：`python3 tests/validate_data.py data/pre/YYYY-MM-DD.json --pre`（校验 `meta` + `market.pre` 两块）。
 11. 任一失败则退出码非 0，并打印缺失字段路径。
 
 ## 变更记录
@@ -200,3 +222,4 @@ AI 结合当日新闻、大盘形势与自选股表现给出的参考建议。**
 - v4（2026-07-30）：放宽 `market.breadth` —— `suspensionCount` 允许 `null`、`detail` 允许空数组 `[]`，仅用于**历史补做日**（`data_changedist` 为实时接口、补做时已滚动到当日，精细分档与停牌家数不可回溯）。当日收盘后正常生成的数据仍应填充真实值。校验脚本与前端同步降级：空 `detail` 不渲染分布条、显示历史补做说明；`suspensionCount` 为 `null` 时显示 `—`。驱动原因：补做 7.30 数据时连接器 `data_changedist` 已返回 7.31，`breadth.detail`/`suspensionCount` 不可回溯。
 - v5（2026-07-31）：watchlist[].quote 口径A 新增可选字段 `chg_250d`（number|null，250日涨跌幅%）。A股主板三大指数仍取自 `overview.interval` 的 `CHG_250D_*`，沪深300 取自 `overview.rotation` 的 `CHG_250D_HS300`，美股指数(us_index) 经 `data_kline` 回算。驱动原因：报告"今日指数"卡片含 250日 列，原模板误将 `chg_ytd` 当作 250日 填充（仅 A股三大指数有真实 250日，沪深300/标普500 显示错值或空），现已修正为读取 `chg_250d` 并增加 `null` 置空保护；标普500 经 `data_kline` 回算补入 5/20/60/250日 与 52周 高低。
 - v6（2026-08-17）：新增 `market.news`（科技新闻板块：产品发布/融资并购/技术突破/标准规范四枚举分类）与 `market.recommendations`（买入/止盈建议 + 金融形势 + 传统行业分析）。**均为可选字段，历史文件缺失放行**（校验与前端同步降级）；2026-08-17 起每日复盘必产。驱动原因：用户要求复盘总结新增科技热点新闻覆盖（产品发布/融资并购/技术突破/标准规范），并基于新闻+大盘+自选股给出推荐买入/推荐止盈与传统行业分析。
+- v7（2026-08-29）：新增 `market.pre`（盘前速览：隔夜外围/消息面/自选晨报/量化预判/今日关注/盘前总结 + 盘后补写预判验证 review）。盘前自动化（工作日 09:05）产出 `data/pre/YYYY-MM-DD.json`（`{ meta, market: { pre } }` 结构，支持 `validate_data.py --pre` 校验），晚间复盘时合并进当日 daily 文件。可选字段，历史文件缺失放行。驱动原因：用户要求盘前做分析总结、晚上与盘后复盘合并并推送到微信小程序（WorkBuddy 自动化产出自动推送）。

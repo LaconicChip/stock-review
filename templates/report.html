@@ -187,6 +187,34 @@
     .reco-risk { font-size: 12px; color: var(--ink2); line-height: 1.6; margin-top: 2px; }
     .reco-analysis { margin-top: 14px; border-top: 1px dashed var(--hairline); padding-top: 10px; }
     @media (max-width: 760px) { .news-grid, .reco-grid { grid-template-columns: 1fr; } }
+
+    /* ===== 盘前速览（v7） ===== */
+    .pre-summary { font-weight: 600; margin-bottom: 10px; }
+    .pre-review { border-left: 3px solid var(--link); background: var(--card); padding: 8px 12px;
+                  margin-bottom: 12px; font-size: 12.5px; line-height: 1.65; color: var(--ink2); white-space: pre-line; }
+    .pre-review .pre-review-title { color: var(--ink); font-weight: 600; font-size: 12px; margin-bottom: 2px; }
+    .pre-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .pre-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .pre-row { display: flex; align-items: baseline; gap: 8px; padding: 5px 9px;
+               border: 1px solid var(--hairline); border-radius: 6px; background: var(--card); font-size: 12.5px; }
+    .pre-row .pre-name { font-weight: 600; min-width: 5em; }
+    .pre-row .pre-val { font-family: var(--mono); }
+    .pre-row .pre-note { color: var(--ink2); font-size: 11px; margin-left: auto; }
+    .pre-hl { display: flex; gap: 8px; padding: 6px 9px; border: 1px solid var(--hairline);
+              border-radius: 6px; background: var(--card); font-size: 12.5px; line-height: 1.6; }
+    .pre-hl .hl-dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; margin-top: 6px; }
+    .hl-pos { background: var(--up); } .hl-neg { background: var(--down); } .hl-neu { background: var(--ink2); }
+    .pre-hl .hl-tag { flex: 0 0 auto; color: var(--ink2); font-size: 11px; font-family: var(--mono); }
+    .pre-quant { display: flex; gap: 8px; padding: 5px 9px; border: 1px solid var(--hairline);
+                 border-radius: 6px; background: var(--card); font-size: 12.5px; align-items: baseline; }
+    .pre-quant .q-name { font-weight: 600; min-width: 5em; }
+    .pre-quant .q-score { font-family: var(--mono); }
+    .pre-quant .q-sig { margin-left: auto; font-size: 12px; }
+    .pre-focus { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pre-focus .f-tag { padding: 3px 10px; border: 1px solid var(--hairline); border-radius: 999px;
+                        font-size: 12px; background: var(--card); line-height: 1.6; }
+    .f-level { border-color: var(--link); } .f-risk { border-color: var(--up); }
+    @media (max-width: 760px) { .pre-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -418,6 +446,30 @@
         <div class="reco-analysis"><div class="plate-title">国内金融形势</div><p class="comment" style="margin:0;white-space:pre-line">${esc(reco.market_analysis || "")}</p></div>
         ${reco.traditional_note ? `<div class="reco-analysis"><div class="plate-title">传统行业分析（白酒/电力等）</div><p class="comment" style="margin:0;white-space:pre-line">${esc(reco.traditional_note)}</p></div>` : ""}` : "";
 
+      // ---- v7: 盘前速览 ----
+      const pre = m.pre;
+      const preBody = pre ? `
+        <p class="comment pre-summary">🌅 ${esc(pre.summary || "")}</p>
+        ${pre.review ? `<div class="pre-review"><div class="pre-review-title">晚间验证 · 盘前预判 vs 实际走势</div>${esc(pre.review)}</div>` : ""}
+        <div class="pre-grid">
+          <div class="pre-group"><div class="plate-title">隔夜外围</div>${(pre.overseas || []).map(o => `
+            <div class="pre-row"><span class="pre-name">${esc(o.name)}</span>
+              <span class="pre-val">${esc(o.close)}</span><span class="pre-val ${cls(o.chg)}">${signed(o.chg)}%</span>
+              <span class="pre-note">${esc(o.note || "")}</span></div>`).join("")}</div>
+          <div class="pre-group"><div class="plate-title">量化预判</div>${(pre.quant || []).map(q => `
+            <div class="pre-quant"><span class="q-name">${esc(q.name)}</span><span class="q-score">${q.score}分</span>
+              <span class="q-sig ${q.signal.indexOf("看涨") >= 0 ? "up" : q.signal.indexOf("看跌") >= 0 ? "down" : "flat"}">${esc(q.signal)} ${q.confidence}%</span></div>`).join("")}</div>
+          <div class="pre-group"><div class="plate-title">消息面</div>${(pre.headlines || []).map(h => `
+            <div class="pre-hl"><span class="hl-dot ${h.impact === "positive" ? "hl-pos" : h.impact === "negative" ? "hl-neg" : "hl-neu"}"></span><span>${esc(h.text)}</span></div>`).join("")}</div>
+          <div class="pre-group"><div class="plate-title">自选晨报</div>${(pre.watchlist_note || []).map(w => `
+            <div class="pre-hl"><span class="hl-tag">${esc(w.name)}</span><span>${esc(w.note)}</span></div>`).join("")}</div>
+        </div>
+        <div class="plate-title">今日关注</div>
+        <div class="pre-focus">${(pre.focus || []).map(f => {
+          const lbl = { level: "点位", event: "事件", risk: "风险", sector: "板块" }[f.type] || f.type;
+          return `<span class="f-tag f-${esc(f.type)}">${lbl} · ${esc(f.text)}</span>`;
+        }).join("")}</div>` : "";
+
       const mod = (key, title, hsum, body, openByDefault) => `<section class="module${openByDefault ? " open" : ""}">
           <button class="acc-header" data-mod="${key}"><span class="chev">▸</span><span class="htitle">${title}</span><span class="hsum">${esc(hsum)}</span></button>
           <div class="acc-body"><div class="inner card">${body}</div></div>
@@ -442,6 +494,7 @@
         ${mod("overview", "大盘全景", summaryLine, overviewBody, true)}
         ${mod("sectors", "板块轮动", sectorSum, sectorBody, false)}
         ${mod("clusters", "资金簇", clusterSum, clusterBody, false)}
+        ${pre ? mod("pre", "盘前速览", (pre.date || data.meta.date) + " 早间", preBody, false) : ""}
         ${m.news ? mod("news", "科技新闻", (m.news.items || []).length + " 条", newsBody, false) : ""}
         ${reco ? mod("reco", "买卖建议", "买入 " + (reco.buy || []).length + " · 止盈 " + (reco.take_profit || []).length, recoBody, false) : ""}
         ${mod("watchlist", "自选股", wl.length + " 只", watchBody, false)}
